@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/utils/cn";
 
@@ -18,10 +18,16 @@ export default function NewProjectPage() {
     const [competitors, setCompetitors] = useState<string[]>([]);
     const [competitorInput, setCompetitorInput] = useState("");
 
+    const MAX_DESCRIPTION_LENGTH = 500;
+    const MAX_COMPETITORS = 10;
+
     const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+        e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     ) => {
         const { name, value } = e.target;
+        if (name === "description" && value.length > MAX_DESCRIPTION_LENGTH) {
+            return;
+        }
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
@@ -30,7 +36,11 @@ export default function NewProjectPage() {
             e.preventDefault();
             const value = competitorInput.trim().replace(/,$/, "");
 
-            if (value && !competitors.includes(value)) {
+            if (
+                value &&
+                !competitors.includes(value) &&
+                competitors.length < MAX_COMPETITORS
+            ) {
                 setCompetitors([...competitors, value]);
             }
             setCompetitorInput("");
@@ -55,14 +65,14 @@ export default function NewProjectPage() {
 
     return (
         <div className="max-w-2xl mx-auto py-12 px-4">
-            <h1 className="text-3xl font-bold mb-8 text-slate-100">
+            <h1 className="text-3xl font-bold mb-8 text-content-primary">
                 Создание проекта
             </h1>
 
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300">
+                        <label className="text-sm font-medium text-content-secondary">
                             Название бренда/компании*
                         </label>
                         <input
@@ -70,13 +80,13 @@ export default function NewProjectPage() {
                             name="brandName"
                             value={formData.brandName}
                             onChange={handleInputChange}
-                            placeholder="Например, Яндекс Практикум"
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            placeholder="Название вашего бренда"
+                            className="w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-2.5 text-content-primary focus:outline-none focus:border-accent-2 focus:ring-1 focus:ring-accent-2 transition-colors mt-1"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300">
+                        <label className="text-sm font-medium text-content-secondary">
                             Сфера деятельности*
                         </label>
                         <input
@@ -84,18 +94,23 @@ export default function NewProjectPage() {
                             name="niche"
                             value={formData.niche}
                             onChange={handleInputChange}
-                            placeholder="Например, EdTech, онлайн-образование"
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            placeholder="Например, онлайн-образование"
+                            className="w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-2.5 text-content-primary focus:outline-none focus:border-accent-2 focus:ring-1 focus:ring-accent-2 transition-colors mt-1"
                         />
                     </div>
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">
-                        Конкуренты
-                    </label>
+                    <div className="flex justify-between items-center">
+                        <label className="text-sm font-medium text-content-secondary">
+                            Конкуренты
+                        </label>
+                        <span className="text-xs text-content-light">
+                            {competitors.length} / {MAX_COMPETITORS}
+                        </span>
+                    </div>
                     <div
-                        className="flex flex-wrap items-center gap-2 w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-colors cursor-text"
+                        className="flex flex-wrap items-center gap-2 w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-2 min-h-[48px] focus-within:border-accent-2 focus-within:ring-1 focus-within:ring-accent-2 transition-colors mt-1 cursor-text"
                         onClick={() =>
                             document.getElementById("competitor-input")?.focus()
                         }
@@ -103,7 +118,7 @@ export default function NewProjectPage() {
                         {competitors.map((competitor) => (
                             <span
                                 key={competitor}
-                                className="flex items-center gap-1.5 bg-slate-800 text-slate-200 px-3 py-1 rounded-full text-sm select-none"
+                                className="flex items-center gap-1.5 bg-surface-1 text-content-primary px-3 py-1 rounded-full text-sm select-none border border-content-light/20"
                             >
                                 {competitor}
                                 <button
@@ -112,7 +127,7 @@ export default function NewProjectPage() {
                                         e.stopPropagation();
                                         removeCompetitor(competitor);
                                     }}
-                                    className="text-slate-400 hover:text-slate-100 focus:outline-none"
+                                    className="text-content-light hover:text-content-secondary focus:outline-none"
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -147,22 +162,23 @@ export default function NewProjectPage() {
                             value={competitorInput}
                             onChange={(e) => setCompetitorInput(e.target.value)}
                             onKeyDown={handleAddCompetitor}
+                            disabled={competitors.length >= MAX_COMPETITORS}
                             placeholder={
                                 competitors.length === 0
-                                    ? "Введите название и нажмите Enter"
+                                    ? "Перечислите основных конкурентов"
                                     : ""
                             }
-                            className="flex-1 min-w-[200px] bg-transparent outline-none text-slate-100 placeholder:text-slate-500"
+                            className="flex-1 min-w-[200px] bg-transparent outline-none text-content-primary placeholder:text-content-light disabled:cursor-not-allowed"
                         />
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-content-secondary mt-1 select-none">
                         Нажмите Enter или запятую, чтобы добавить конкурента
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300">
+                        <label className="text-sm font-medium text-content-secondary">
                             Страна
                         </label>
                         <input
@@ -171,12 +187,12 @@ export default function NewProjectPage() {
                             value={formData.country}
                             onChange={handleInputChange}
                             placeholder="Например, Россия"
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            className="w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-2.5 text-content-primary focus:outline-none focus:border-accent-2 focus:ring-1 focus:ring-accent-2 transition-colors mt-1"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300">
+                        <label className="text-sm font-medium text-content-secondary">
                             Город
                         </label>
                         <input
@@ -185,34 +201,42 @@ export default function NewProjectPage() {
                             value={formData.city}
                             onChange={handleInputChange}
                             placeholder="Например, Москва"
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            className="w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-2.5 text-content-primary focus:outline-none focus:border-accent-2 focus:ring-1 focus:ring-accent-2 transition-colors mt-1"
                         />
                     </div>
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">
-                        Краткое описание (опционально)
-                    </label>
+                    <div className="flex justify-between items-center">
+                        <label className="text-sm font-medium text-content-secondary">
+                            Краткое описание
+                        </label>
+                        <span className="text-xs text-content-light">
+                            Ещё{" "}
+                            {MAX_DESCRIPTION_LENGTH -
+                                formData.description.length}{" "}
+                        </span>
+                    </div>
                     <textarea
                         name="description"
                         value={formData.description}
                         onChange={handleInputChange}
                         placeholder="Чем занимается компания, ключевые продукты или особенности для более точной генерации промптов..."
                         rows={4}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-y"
+                        className="w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-3 text-content-primary focus:outline-none focus:border-accent-2 focus:ring-1 focus:ring-accent-2 transition-colors mt-1 resize-none h-48"
                     />
                 </div>
 
                 <div className="pt-6 flex justify-end">
                     <button
+                        type="button"
                         onClick={handleNext}
                         disabled={!formData.brandName || !formData.niche}
                         className={cn(
-                            "px-6 py-2.5 rounded-lg font-medium transition-colors",
+                            "px-10 py-3 rounded-full font-medium transition-colors",
                             formData.brandName && formData.niche
-                                ? "bg-blue-600 hover:bg-blue-500 text-white"
-                                : "bg-slate-800 text-slate-500 cursor-not-allowed",
+                                ? "bg-accent-2 hover:bg-accent-2-hover text-white cursor-pointer shadow-sm"
+                                : "bg-surface-1 text-content-light cursor-not-allowed",
                         )}
                     >
                         Далее

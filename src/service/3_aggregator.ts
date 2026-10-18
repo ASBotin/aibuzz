@@ -8,7 +8,7 @@ export interface ProjectContext {
 
 export interface PromptResultData {
     prompt_id: string;
-    prompt_category: 'category_discovery' | 'custom' | 'brand_direct' | 'head_to_head';
+    prompt_category: 'main' | 'brand_direct' | 'head_to_head';
     raw_citations: string[];
     metrics: ExtractionMetrics;
 }
@@ -81,7 +81,10 @@ export function calculatePrimaryMetrics(
     data: PromptResultData[],
     context: ProjectContext
 ): AggregatedMain {
-    const validPrompts = data.filter(p => p.prompt_category !== 'brand_direct');
+    // Исключаем brand_direct и head_to_head из расчета основных метрик (SoV и т.д.)
+    const validPrompts = data.filter(
+        p => p.prompt_category !== 'brand_direct' && p.prompt_category !== 'head_to_head'
+    );
     const totalValid = validPrompts.length;
     const targetNorm = normalizeBrandName(context.targetBrand);
 
@@ -178,7 +181,7 @@ export function calculatePrimaryMetrics(
 
     allCompetitors.sort((a, b) => b.count - a.count);
 
-    const topCompetitors = allCompetitors.slice(0, 10);
+    const topCompetitors = allCompetitors.slice(0, 15);
     const standaloneKeys = new Set(topCompetitors.map(c => c.normKey));
 
     let otherPromptsCount = 0;
@@ -257,7 +260,6 @@ export function calculateH2HMetrics(
         cons: Set<string>;
     }>();
 
-    // Инициализируем целевой бренд
     brandMap.set(targetNorm, {
         originalName: context.targetBrand,
         is_target: true,
@@ -324,7 +326,6 @@ export function calculateH2HMetrics(
         };
     });
 
-    // Сортировка по среднему рангу (по возрастанию: 1 — лучший). При равенстве или отсутствии рангов целевой бренд идет первым.
     h2h_matrix.sort((a, b) => {
         if (a.average_rank !== null && b.average_rank !== null) {
             return a.average_rank - b.average_rank;

@@ -56,14 +56,14 @@ export default function CreatePromptsPage() {
     };
 
     return (
-        <div className="max-w-2xl mx-auto py-20 px-4 text-center">
-            <h1 className="text-3xl font-bold mb-4 text-slate-100">
+        <div className="max-w-2xl mx-auto py-20 px-4 text-center select-none">
+            <h1 className="text-3xl font-bold mb-4 text-content-primary">
                 Генерация промптов
             </h1>
 
-            <p className="text-slate-400 mb-8 max-w-lg mx-auto leading-relaxed">
+            <p className="text-content-secondary mb-8 max-w-lg mx-auto leading-relaxed">
                 Генератор промптов создаст оптимальный список пользовательских
-                запросов для изучения. Затем вы сможете редактировать и
+                запросов для изучения. Затем вы сможете редактировать их и
                 добавлять свои.
             </p>
 
@@ -77,10 +77,10 @@ export default function CreatePromptsPage() {
                 onClick={handleGenerate}
                 disabled={loading}
                 className={cn(
-                    "px-8 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2 text-base",
+                    "px-10 py-4 rounded-full text-sm font-medium inline-flex items-center gap-2 cursor-pointer",
                     loading
-                        ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-500 text-white",
+                        ? "bg-surface-1 text-content-secondary cursor-not-allowed"
+                        : "bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 text-white hover:shadow-lg hover:shadow-accent-2/25 hover:-translate-y-0.5 transition-all",
                 )}
             >
                 {loading ? (

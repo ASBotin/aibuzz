@@ -15,6 +15,14 @@ export async function PUT(
         const body = await request.json();
         const { projectData, competitors, prompts } = body;
 
+        // Проверяем лимит до изменения проекта и удаления старых промптов.
+        if (!Array.isArray(prompts) || prompts.length > 25) {
+            return NextResponse.json(
+                { error: 'В проекте должно быть не более 25 промптов.' },
+                { status: 400 }
+            );
+        }
+
         // Обновляем проект
         const { error: updateErr } = await supabase
             .from("projects")
@@ -31,14 +39,20 @@ export async function PUT(
 
         if (updateErr) throw new Error(updateErr.message);
 
-        // Перезаписываем промпты: удаляем старые и вставляем новые
-        await supabase.from("prompts").delete().eq("project_id", projectId);
+        // Перезаписываем промпты
+        const { error: deleteErr } = await supabase
+            .from("prompts")
+            .delete()
+            .eq("project_id", projectId);
 
-        if (prompts && prompts.length > 0) {
+        if (deleteErr) throw new Error(deleteErr.message);
+
+        if (prompts.length > 0) {
             const promptsToInsert = prompts.map((p: any) => ({
                 project_id: projectId,
                 text: p.text,
                 category: p.category,
+                is_custom: p.is_custom === true || p.isCustom === true,
             }));
 
             const { error: promptInsertErr } = await supabase
@@ -49,7 +63,8 @@ export async function PUT(
         }
 
         return NextResponse.json({ success: true });
-    } catch (err: any) {
-        return NextResponse.json({ error: err.message }, { status: 500 });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Ошибка сохранения";
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }

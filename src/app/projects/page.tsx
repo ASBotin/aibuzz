@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
+import ArrowRight from "@/assets/arrow_right.svg?react";
+
 const TEST_USER_ID = "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
 
 const supabase = createClient(
@@ -16,7 +18,7 @@ type ProjectWithReports = {
     reports: { created_at: string }[];
 };
 
-export const revalidate = 0; // Отключаем кэш для актуальных данных
+export const revalidate = 0;
 
 export default async function ProjectsPage() {
     const { data: rawProjects, error } = await supabase
@@ -43,18 +45,26 @@ export default async function ProjectsPage() {
 
     return (
         <div className="max-w-5xl mx-auto py-12 px-4">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-8 select-none">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-100">
+                    <h1 className="text-3xl font-bold text-content-primary">
                         Проекты
                     </h1>
-                    <p className="text-slate-400 text-sm mt-1">
-                        Список созданных проектов и отчетов
-                    </p>
                 </div>
                 <Link
                     href="/projects/new"
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
+                    className="bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 
+                    text-white 
+                    hover:shadow-lg 
+                    hover:shadow-accent-2/25 
+                    hover:-translate-y-0.5 
+                    transition-all
+                    px-8 py-4 
+                    rounded-full 
+                    text-sm 
+                    font-medium 
+                    inline-flex 
+                    items-center gap-2"
                 >
                     <svg
                         className="w-4 h-4"
@@ -74,21 +84,20 @@ export default async function ProjectsPage() {
             </div>
 
             {projects.length === 0 ? (
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
-                    <p className="text-slate-400 mb-4">
+                <div className="p-12 text-center">
+                    <p className="text-content-secondary text-xl mb-4">
                         У вас пока нет активных проектов
                     </p>
                     <Link
                         href="/projects/new"
-                        className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                        className="text-accent-2 hover:text-accent-2-hover text-xl font-medium"
                     >
                         Создать первый проект →
                     </Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-4">
                     {projects.map((project) => {
-                        // Находим самую свежую дату отчета, либо берем дату создания проекта
                         const lastReport = project.reports?.length
                             ? project.reports.reduce((latest, r) =>
                                   new Date(r.created_at) >
@@ -115,22 +124,28 @@ export default async function ProjectsPage() {
                             <Link
                                 key={project.id}
                                 href={`/projects/${project.id}`}
-                                className="block bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-6 transition-all hover:bg-slate-800/40 group"
+                                className="block bg-surface-1 rounded-3xl p-6 group hover:bg-surface-3 transition-all"
                             >
-                                <div className="flex justify-between items-start mb-4">
-                                    <h2 className="text-xl font-bold text-slate-100 group-hover:text-blue-400 transition-colors uppercase tracking-wide">
-                                        {project.name}
-                                    </h2>
-                                    <span className="text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-md border border-slate-700">
-                                        {project.niche}
-                                    </span>
-                                </div>
+                                <div className="flex justify-between items-center">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-xl font-bold text-content-primary uppercase tracking-wide">
+                                                {project.name}
+                                            </h2>
+                                            <span className="text-sm text-content-secondary font-normal">
+                                                {project.niche}
+                                            </span>
+                                        </div>
 
-                                <div className="pt-4 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-400">
-                                    <span>Последнее исследование:</span>
-                                    <span className="font-medium text-slate-300">
-                                        {lastAuditDate}
-                                    </span>
+                                        <div className="flex gap-1 items-center text-sm text-content-secondary font-normal">
+                                            <span className="font-medium">
+                                                Последнее исследование:
+                                            </span>
+                                            <span>{lastAuditDate}</span>
+                                        </div>
+                                    </div>
+
+                                    <ArrowRight className="w-5 h-5 text-content-light group-hover:text-accent-2 transition-transform group-hover:translate-x-1 shrink-0" />
                                 </div>
                             </Link>
                         );

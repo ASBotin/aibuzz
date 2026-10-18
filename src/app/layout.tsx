@@ -1,15 +1,15 @@
-import './globals.css';
+import "./globals.css";
 
 export default function RootLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  return (
-    <html lang="ru">
-      <body className="bg-slate-950 text-slate-100 min-h-screen antialiased">
-        {children}
-      </body>
-    </html>
-  );
+    return (
+        <html lang="ru">
+            <body className="bg-main text-content-primary min-h-screen antialiased">
+                {children}
+            </body>
+        </html>
+    );
 }

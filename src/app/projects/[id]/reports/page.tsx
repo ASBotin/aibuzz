@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import Report from "@/assets/report.svg?react";
+import ArrowRight from "@/assets/arrow_right.svg?react";
 
 const TEST_USER_ID =
     process.env.NEXT_PUBLIC_TEST_USER_ID ||
@@ -51,19 +53,19 @@ export default async function ReportsPage({ params }: PageProps) {
         switch (status) {
             case "completed":
                 return (
-                    <span className="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-1 rounded-md">
+                    <span className="text-xs bg-green-300/40 text-emerald-800 px-6 py-1 rounded-full">
                         Готов
                     </span>
                 );
             case "processing":
                 return (
-                    <span className="text-xs bg-amber-950 text-amber-400 border border-amber-800 px-2.5 py-1 rounded-md">
+                    <span className="text-xs bg-amber-300/40 text-amber-800 px-4 py-1 rounded-full">
                         В обработке
                     </span>
                 );
             case "failed":
                 return (
-                    <span className="text-xs bg-red-950 text-red-400 border border-red-800 px-2.5 py-1 rounded-md">
+                    <span className="text-xs bg-red-300/40 text-red-800 px-5.5 py-1 rounded-full">
                         Ошибка
                     </span>
                 );
@@ -77,37 +79,50 @@ export default async function ReportsPage({ params }: PageProps) {
             <div className="mb-6">
                 <Link
                     href={`/projects/${projectId}`}
-                    className="text-sm text-slate-400 hover:text-slate-200 transition-colors inline-flex items-center gap-1.5"
+                    className="text-sm text-content-secondary hover:text-content-primary inline-flex items-center gap-1.5"
                 >
                     ← К проекту
                 </Link>
             </div>
 
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-8 select-none">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-100">
+                    <h1 className="text-3xl font-bold text-content-primary">
                         Отчеты
                     </h1>
-                    <p className="text-slate-400 text-sm mt-1">
+                    <p className="text-content-secondary text-sm mt-1">
                         Проект: {project.name}
                     </p>
                 </div>
                 <Link
                     href={`/projects/${projectId}/run-audit`}
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                    className="
+                    bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 
+                    text-white 
+                    hover:shadow-lg 
+                    hover:shadow-accent-2/25 
+                    hover:-translate-y-0.5 
+                    transition-all
+                    px-6 py-4 
+                    rounded-full 
+                    text-sm 
+                    font-medium 
+                    inline-flex 
+                    items-center gap-2
+                    whitespace-nowrap"
                 >
                     Новое исследование
                 </Link>
             </div>
 
             {reports.length === 0 ? (
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
-                    <p className="text-slate-400 mb-4">
+                <div className="p-12 text-center">
+                    <p className="text-content-secondary mb-4">
                         Для этого проекта еще не проводились исследования
                     </p>
                     <Link
                         href={`/projects/${projectId}/run-audit`}
-                        className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                        className="text-accent-2 hover:text-accent-2-hover text-sm font-medium"
                     >
                         Запустить первое исследование →
                     </Link>
@@ -128,49 +143,20 @@ export default async function ReportsPage({ params }: PageProps) {
                         const isCompleted = report.status === "completed";
 
                         const content = (
-                            <div className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-5 transition-all flex justify-between items-center group">
+                            <div className="bg-surface-1 rounded-3xl p-8 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 select-none group">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-400 transition-colors">
-                                        <svg
-                                            className="w-5 h-5"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div className="text-sm font-medium text-slate-200">
+                                    <Report className="w-7 h-7 text-content-secondary group-hover:text-accent-2" />
+                                    <div className="flex flex-col gap-2 items-start">
+                                        <div className="text-base font-medium text-content-primary">
                                             Исследование от {dateStr}
                                         </div>
-                                        <div className="text-xs text-slate-500 mt-0.5">
-                                            ID: {report.id}
-                                        </div>
+                                        {getStatusBadge(report.status)}
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    {getStatusBadge(report.status)}
                                     {isCompleted && (
-                                        <svg
-                                            className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M9 5l7 7-7 7"
-                                            />
-                                        </svg>
+                                        <ArrowRight className="w-5 h-5 text-content-light group-hover:text-accent-2 transition-transform group-hover:translate-x-1 shrink-0" />
                                     )}
                                 </div>
                             </div>

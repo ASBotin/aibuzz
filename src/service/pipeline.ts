@@ -10,6 +10,55 @@ import {
     PromptResultData 
 } from './3_aggregator';
 import { generateReportSummary, SummarizerInput } from './4_summarizer';
+import { normalizeBrandName } from '../utils/normName';
+
+type H2HMatrixItem = SummarizerInput['h2hMatrix'][number];
+
+function cleanStringList(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return [...new Set(
+        value
+            .filter((item): item is string => typeof item === 'string')
+            .map(item => item.trim())
+            .filter(Boolean)
+    )].slice(0, 3);
+}
+
+// Оставляем только целевой бренд и конкурентов из настроек проекта.
+function filterH2HMatrixToProjectBrands(
+    matrix: H2HMatrixItem[],
+    context: ProjectContext,
+): H2HMatrixItem[] {
+    const targetNorm = normalizeBrandName(context.targetBrand);
+    const allowedBrands = new Map<string, string>();
+    allowedBrands.set(targetNorm, context.targetBrand);
+
+    for (const competitor of context.competitors) {
+        if (typeof competitor !== 'string' || !competitor.trim()) continue;
+        const norm = normalizeBrandName(competitor);
+        if (norm && !allowedBrands.has(norm)) allowedBrands.set(norm, competitor.trim());
+    }
+
+    const seen = new Set<string>();
+    return matrix.flatMap((item) => {
+        if (!item || typeof item.brand !== 'string') return [];
+
+        const norm = normalizeBrandName(item.brand);
+        const configuredName = allowedBrands.get(norm);
+        if (!configuredName || seen.has(norm)) return [];
+        seen.add(norm);
+
+        return [{
+            brand: configuredName,
+            is_target: norm === targetNorm,
+            average_rank: typeof item.average_rank === 'number' && Number.isFinite(item.average_rank)
+                ? item.average_rank
+                : null,
+            pros: cleanStringList(item.pros),
+            cons: cleanStringList(item.cons),
+        }];
+    });
+}
 
 export interface PromptResultRow {
     id: string;
@@ -171,6 +220,10 @@ export async function runReportPipeline(
 
         const primaryMetrics = calculatePrimaryMetrics(aggregatorInput, projectContext);
         const h2hMetrics = calculateH2HMetrics(aggregatorInput, projectContext);
+        const projectH2HMatrix = filterH2HMatrixToProjectBrands(
+            h2hMetrics.h2h_matrix,
+            projectContext,
+        );
         const sourceMetrics = calculateSourceMetrics(aggregatorInput);
 
         // --- 4. ФИНАЛЬНОЕ РЕЗЮМЕ И ЗАПИСЬ ---
@@ -187,6 +240,7 @@ export async function runReportPipeline(
             sentimentIndex: primaryMetrics.sentiment_index,
             topCompetitors: primaryMetrics.competitors_breakdown.slice(0, 3).map(c => ({ name: c.name, sov: c.sov })),
             topSources: sourceMetrics.top_sources.slice(0, 3).map(s => ({ domain: s.domain, count: s.count })),
+            h2hMatrix: projectH2HMatrix,
             directBrandProsCons
         };
 
@@ -200,7 +254,8 @@ export async function runReportPipeline(
                 average_rank: primaryMetrics.average_rank,
                 sentiment_index: primaryMetrics.sentiment_index,
                 citation_rate: sourceMetrics.citation_rate,
-                h2h_matrix: h2hMetrics.h2h_matrix,
+                h2h_matrix: textSummaries.h2h_matrix,
+                h2h_summary: textSummaries.h2h_summary,
                 competitors_breakdown: primaryMetrics.competitors_breakdown,
                 top_sources: sourceMetrics.top_sources,
                 ai_summary: textSummaries.ai_summary,

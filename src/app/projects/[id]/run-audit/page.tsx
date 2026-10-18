@@ -46,17 +46,17 @@ export default function RunAuditPage() {
             <div className="mb-6">
                 <Link
                     href={`/projects/${projectId}`}
-                    className="text-sm text-slate-400 hover:text-slate-200 transition-colors inline-flex items-center gap-1.5"
+                    className="text-sm text-content-secondary hover:text-content-primary inline-flex items-center gap-1.5"
                 >
                     ← К проекту
                 </Link>
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
-                <h1 className="text-2xl font-bold text-slate-100 mb-2">
+            <div className="max-w-2xl mx-auto py-20 px-4 text-center select-none">
+                <h1 className="text-2xl font-bold text-content-primary mb-2">
                     {success ? "Исследование запущено" : "Запуск исследования"}
                 </h1>
-                <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+                <p className="text-content-secondary text-sm mb-8 leading-relaxed">
                     {success
                         ? "Анализ успешно завершен. Результаты сохранены в системе."
                         : "Система выполнит поисковые запросы, соберет данные из ИИ-источников, проанализирует упоминания бренда и сформирует итоговый отчет."}
@@ -71,7 +71,7 @@ export default function RunAuditPage() {
                 {success ? (
                     <Link
                         href={`/projects/${projectId}/reports`}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-medium transition-colors inline-flex items-center gap-2 text-sm shadow-lg shadow-blue-900/20"
+                        className="px-4 py-2 text-xs bg-accent-2 hover:bg-accent-2-hover text-white rounded-xl font-medium transition-colors cursor-pointer"
                     >
                         Перейти к отчетам
                     </Link>
@@ -80,10 +80,10 @@ export default function RunAuditPage() {
                         onClick={handleRun}
                         disabled={loading}
                         className={cn(
-                            "px-8 py-3 rounded-xl font-medium transition-colors inline-flex items-center gap-2 text-sm",
+                            "px-10 py-4 rounded-full text-sm font-medium inline-flex items-center gap-2 cursor-pointer",
                             loading
-                                ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                                : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20",
+                                ? "bg-surface-1 text-content-secondary cursor-not-allowed"
+                                : "bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 text-white hover:shadow-lg hover:shadow-accent-2/25 hover:-translate-y-0.5 transition-all",
                         )}
                     >
                         {loading ? (
