@@ -421,6 +421,12 @@ export default async function ReportPage({ params }: PageProps) {
     const topSources = (
         Array.isArray(report.top_sources) ? report.top_sources : []
     ) as SourceItem[];
+    // Keep the aggregate "other" row at the bottom of the competitors table.
+    const sortedCompetitorItems = [...competitorItems].sort((a, b) => {
+        const aIsOther = a.name.trim().toLocaleLowerCase("ru-RU") === "other";
+        const bIsOther = b.name.trim().toLocaleLowerCase("ru-RU") === "other";
+        return Number(aIsOther) - Number(bIsOther);
+    });
     const hasUnavailableOriginalData = promptResults.some((result) => {
         const hasPromptText = Boolean(result.prompt_text?.trim());
         const hasLinks = Boolean(
@@ -809,40 +815,42 @@ export default async function ReportPage({ params }: PageProps) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {competitorItems.map((item, index) => (
-                                        <tr
-                                            key={`${item.name}-${index}`}
-                                            className="border-t border-surface-3"
-                                        >
-                                            <td className="px-4 py-3 text-content-primary">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="break-words">
-                                                        {item.name}
-                                                    </span>
-                                                    {item.name ===
-                                                        project.name && (
-                                                        <Tag tone="accent">
-                                                            Ваш бренд
-                                                        </Tag>
+                                    {sortedCompetitorItems.map(
+                                        (item, index) => (
+                                            <tr
+                                                key={`${item.name}-${index}`}
+                                                className="border-t border-surface-3"
+                                            >
+                                                <td className="px-4 py-3 text-content-primary">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="break-words">
+                                                            {item.name}
+                                                        </span>
+                                                        {item.name ===
+                                                            project.name && (
+                                                            <Tag tone="accent">
+                                                                Ваш бренд
+                                                            </Tag>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-content-primary tabular-nums">
+                                                    {formatNumber(item.sov)}%
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-content-secondary tabular-nums">
+                                                    {formatNumber(
+                                                        item.average_rank,
                                                     )}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-content-primary tabular-nums">
-                                                {formatNumber(item.sov)}%
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-content-secondary tabular-nums">
-                                                {formatNumber(
-                                                    item.average_rank,
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-content-secondary tabular-nums">
-                                                {formatNumber(
-                                                    item.mentions_count,
-                                                    0,
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-content-secondary tabular-nums">
+                                                    {formatNumber(
+                                                        item.mentions_count,
+                                                        0,
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ),
+                                    )}
                                 </tbody>
                             </table>
                         </div>
