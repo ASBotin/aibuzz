@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/utils/cn";
+import AccentButton from "@/components/ui/AccentButton";
 import ProjectDetailsForm from "@/components/projects/ProjectDetailsForm";
 import {
     createEmptyProjectFormData,
@@ -46,19 +46,13 @@ export default function NewProjectPage() {
             />
 
             <div className="pt-6 flex justify-end">
-                <button
-                    type="button"
+                <AccentButton
+                    size="lg"
                     onClick={handleNext}
                     disabled={!formData.brandName || !formData.niche}
-                    className={cn(
-                        "px-10 py-3 rounded-full font-medium transition-colors",
-                        formData.brandName && formData.niche
-                            ? "bg-accent-2 hover:bg-accent-2-hover text-white cursor-pointer shadow-sm"
-                            : "bg-surface-1 text-content-light cursor-not-allowed",
-                    )}
                 >
                     Далее
-                </button>
+                </AccentButton>
             </div>
         </div>
     );

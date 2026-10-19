@@ -2,6 +2,8 @@
 
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { cn } from "@/utils/cn";
+import AccentButton from "@/components/ui/AccentButton";
+import Tag from "@/components/ui/Tag";
 import {
     MAX_PROMPTS,
     PROMPT_CATEGORIES,
@@ -203,7 +205,8 @@ export default function PromptEditor({ prompts, onChange }: PromptEditorProps) {
                                                         aria-label="Редактировать промпт"
                                                         className="flex-1 min-w-0 bg-surface-2 border border-surface-3 rounded-xl px-3 py-1.5 text-sm text-content-primary outline-none focus:border-accent-2"
                                                     />
-                                                    <button
+                                                    <AccentButton
+                                                        size="sm"
                                                         type="button"
                                                         onClick={() =>
                                                             saveEdit(prompt.id)
@@ -211,18 +214,21 @@ export default function PromptEditor({ prompts, onChange }: PromptEditorProps) {
                                                         disabled={
                                                             !editValue.trim()
                                                         }
-                                                        className="self-start text-xs bg-accent-2 hover:bg-accent-2-hover text-white px-3 py-1.5 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                                        className="self-start px-3 py-1.5"
                                                     >
                                                         Сохранить
-                                                    </button>
+                                                    </AccentButton>
                                                 </div>
                                             ) : (
                                                 <>
                                                     <div className="flex-1 min-w-0 text-sm text-content-secondary leading-relaxed">
                                                         {prompt.isCustom && (
-                                                            <span className="inline-block text-xs bg-accent-2/10 text-accent-2 border border-accent-2/20 px-2 py-0.5 rounded-full mr-2 mb-1 font-medium">
+                                                            <Tag
+                                                                tone="accent"
+                                                                className="mr-2 mb-1"
+                                                            >
                                                                 Пользовательский
-                                                            </span>
+                                                            </Tag>
                                                         )}
                                                         {prompt.text}
                                                     </div>
@@ -378,15 +384,15 @@ export default function PromptEditor({ prompts, onChange }: PromptEditorProps) {
                             >
                                 Отмена
                             </button>
-                            <button
+                            <AccentButton
+                                size="sm"
                                 type="button"
                                 onClick={acceptWarning}
-                                className="px-4 py-2 text-xs bg-accent-2 hover:bg-accent-2-hover text-white rounded-xl font-medium transition-colors cursor-pointer"
                             >
                                 {pendingDeleteId
                                     ? "Да, удалить"
                                     : "Понятно, продолжить"}
-                            </button>
+                            </AccentButton>
                         </div>
                     </div>
                 </div>

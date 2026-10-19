@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AccentButton from "@/components/ui/AccentButton";
 import PromptEditor from "@/components/projects/PromptEditor";
 import {
     MAX_PROMPTS,
@@ -127,14 +128,13 @@ export default function PromptsEditorPage() {
             <PromptEditor prompts={prompts} onChange={setPrompts} />
 
             <div className="flex justify-end">
-                <button
-                    type="button"
+                <AccentButton
+                    size="lg"
                     onClick={handleConfirm}
                     disabled={saving}
-                    className="px-10 py-3 rounded-full font-medium transition-colors bg-accent-2 hover:bg-accent-2-hover text-white cursor-pointer shadow-sm text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {saving ? "Сохранение..." : "Завершить создание"}
-                </button>
+                </AccentButton>
             </div>
         </div>
     );

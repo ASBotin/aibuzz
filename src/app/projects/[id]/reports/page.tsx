@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import Report from "@/assets/report.svg?react";
 import ArrowRight from "@/assets/arrow_right.svg?react";
+import GradientButton from "@/components/ui/GradientButton";
 
 const TEST_USER_ID =
     process.env.NEXT_PUBLIC_TEST_USER_ID ||
@@ -94,25 +95,13 @@ export default async function ReportsPage({ params }: PageProps) {
                         Проект: {project.name}
                     </p>
                 </div>
-                <Link
+                <GradientButton
+                    size="md"
                     href={`/projects/${projectId}/run-audit`}
-                    className="
-                    bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 
-                    text-white 
-                    hover:shadow-lg 
-                    hover:shadow-accent-2/25 
-                    hover:-translate-y-0.5 
-                    transition-all
-                    px-6 py-4 
-                    rounded-full 
-                    text-sm 
-                    font-medium 
-                    inline-flex 
-                    items-center gap-2
-                    whitespace-nowrap"
+                    className="py-4 whitespace-nowrap"
                 >
                     Новое исследование
-                </Link>
+                </GradientButton>
             </div>
 
             {reports.length === 0 ? (

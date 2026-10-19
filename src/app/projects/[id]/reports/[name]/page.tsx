@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import Tag from "@/components/ui/Tag";
 import ExportPdfButton from "./ExportPdfButton";
 
 const TEST_USER_ID =
@@ -160,37 +161,6 @@ function EmptyState({ text }: { text: string }) {
         <div className="rounded-2xl border border-surface-3 bg-surface-2 px-4 py-6 text-sm text-content-secondary">
             {text}
         </div>
-    );
-}
-
-function Tag({
-    children,
-    tone = "default",
-}: {
-    children: ReactNode;
-    tone?:
-        | "default"
-        | "accent"
-        | "transparent"
-        | "positive"
-        | "negative"
-        | "warning";
-}) {
-    const styles = {
-        default: "bg-surface-3 text-content-secondary",
-        accent: "bg-accent-2/10 text-accent-2 border border-accent-2/20",
-        positive: "bg-emerald-500/10 text-emerald-400",
-        negative: "bg-red-500/10 text-red-400",
-        warning: "bg-amber-500/10 text-amber-400",
-        transparent: "bg-surface-2/10 text-white/80",
-    };
-
-    return (
-        <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${styles[tone]}`}
-        >
-            {children}
-        </span>
     );
 }
 

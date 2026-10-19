@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { cn } from "@/utils/cn";
+import AccentButton from "@/components/ui/AccentButton";
+import GradientButton from "@/components/ui/GradientButton";
 
 export default function RunAuditPage() {
     const params = useParams();
@@ -69,22 +70,17 @@ export default function RunAuditPage() {
                 )}
 
                 {success ? (
-                    <Link
+                    <AccentButton
+                        size="sm"
                         href={`/projects/${projectId}/reports`}
-                        className="px-4 py-2 text-xs bg-accent-2 hover:bg-accent-2-hover text-white rounded-xl font-medium transition-colors cursor-pointer"
                     >
                         Перейти к отчетам
-                    </Link>
+                    </AccentButton>
                 ) : (
-                    <button
+                    <GradientButton
+                        size="lg"
                         onClick={handleRun}
                         disabled={loading}
-                        className={cn(
-                            "px-10 py-4 rounded-full text-sm font-medium inline-flex items-center gap-2 cursor-pointer",
-                            loading
-                                ? "bg-surface-1 text-content-secondary cursor-not-allowed"
-                                : "bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 text-white hover:shadow-lg hover:shadow-accent-2/25 hover:-translate-y-0.5 transition-all",
-                        )}
                     >
                         {loading ? (
                             <>
@@ -94,7 +90,7 @@ export default function RunAuditPage() {
                         ) : (
                             "Запустить исследование"
                         )}
-                    </button>
+                    </GradientButton>
                 )}
             </div>
         </div>

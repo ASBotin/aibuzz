@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/utils/cn";
+import GradientButton from "@/components/ui/GradientButton";
 
 export default function CreatePromptsPage() {
     const router = useRouter();
@@ -73,15 +73,10 @@ export default function CreatePromptsPage() {
                 </div>
             )}
 
-            <button
+            <GradientButton
+                size="lg"
                 onClick={handleGenerate}
                 disabled={loading}
-                className={cn(
-                    "px-10 py-4 rounded-full text-sm font-medium inline-flex items-center gap-2 cursor-pointer",
-                    loading
-                        ? "bg-surface-1 text-content-secondary cursor-not-allowed"
-                        : "bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 text-white hover:shadow-lg hover:shadow-accent-2/25 hover:-translate-y-0.5 transition-all",
-                )}
             >
                 {loading ? (
                     <>
@@ -91,7 +86,7 @@ export default function CreatePromptsPage() {
                 ) : (
                     "Создать"
                 )}
-            </button>
+            </GradientButton>
         </div>
     );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 import ArrowRight from "@/assets/arrow_right.svg?react";
+import GradientButton from "@/components/ui/GradientButton";
 
 const TEST_USER_ID = "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
 
@@ -51,20 +52,10 @@ export default async function ProjectsPage() {
                         Проекты
                     </h1>
                 </div>
-                <Link
+                <GradientButton
+                    size="lg"
                     href="/projects/new"
-                    className="bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 
-                    text-white 
-                    hover:shadow-lg 
-                    hover:shadow-accent-2/25 
-                    hover:-translate-y-0.5 
-                    transition-all
-                    px-8 py-4 
-                    rounded-full 
-                    text-sm 
-                    font-medium 
-                    inline-flex 
-                    items-center gap-2"
+                    className="px-8"
                 >
                     <svg
                         className="w-4 h-4"
@@ -80,7 +71,7 @@ export default async function ProjectsPage() {
                         />
                     </svg>
                     Новый проект
-                </Link>
+                </GradientButton>
             </div>
 
             {projects.length === 0 ? (

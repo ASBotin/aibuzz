@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import ProjectDetailsForm from "@/components/projects/ProjectDetailsForm";
 import PromptEditor from "@/components/projects/PromptEditor";
+import AccentButton from "@/components/ui/AccentButton";
 import {
     createEmptyProjectFormData,
     MAX_COMPETITORS,
@@ -188,14 +189,13 @@ export default function ProjectSettingsPage() {
                 <h1 className="text-3xl font-bold text-content-primary">
                     Настройки проекта
                 </h1>
-                <button
-                    type="button"
+                <AccentButton
+                    size="md"
                     onClick={handleSaveAll}
                     disabled={saving}
-                    className="px-6 py-3 rounded-full font-medium transition-colors bg-accent-2 hover:bg-accent-2-hover text-white cursor-pointer shadow-sm text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {saving ? "Сохранение..." : "Сохранить изменения"}
-                </button>
+                </AccentButton>
             </div>
 
             {error && (
