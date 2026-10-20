@@ -132,9 +132,9 @@ export default async function ReportsPage({ params }: PageProps) {
                         const isCompleted = report.status === "completed";
 
                         const content = (
-                            <div className="bg-surface-1 rounded-3xl p-8 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 select-none group">
+                            <div className="bg-surface-1 rounded-3xl p-8 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 select-none group hover:bg-surface-3">
                                 <div className="flex items-center gap-4">
-                                    <Report className="w-7 h-7 text-content-secondary group-hover:text-accent-2" />
+                                    <Report className="w-7 h-7 text-content-secondary  group-hover:text-accent-2" />
                                     <div className="flex flex-col gap-2 items-start">
                                         <div className="text-base font-medium text-content-primary">
                                             Исследование от {dateStr}

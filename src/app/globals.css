@@ -2,10 +2,10 @@
 
 @theme {
   --color-main: #f3f3f5;
-  
+
   --color-surface-1: #e7e6eb;
   --color-surface-2: #ffffff;
-  --color-surface-3: #D5D4D9;  
+  --color-surface-3: #d5d4d9;
 
   --color-content-primary: #121214;
   --color-content-secondary: #717175;
@@ -16,4 +16,167 @@
   --color-accent-3: #65c0c3;
 
   --color-accent-2-hover: #2e7ea5;
+}
+
+@page report {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  body:has(main.report-print-root) {
+    background: #fff !important;
+    color: #121214 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .report-print-root {
+    page: report;
+  }
+
+  .report-print-root .no-print {
+    display: none !important;
+  }
+
+  main.report-print-root {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 1.25rem !important;
+    color: #121214 !important;
+  }
+
+  .report-print-root header {
+    background-color: #415086 !important;
+    background-image: linear-gradient(
+      110deg,
+      #415086 0%,
+      #378eb3 55%,
+      #65c0c3 100%
+    ) !important;
+    border: 0 !important;
+    color: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .report-print-root .bg-surface-1 {
+    background-color: #e7e6eb !important;
+  }
+
+  .report-print-root .bg-surface-2 {
+    background-color: #fff !important;
+  }
+
+  .report-print-root .bg-surface-3 {
+    background-color: #d5d4d9 !important;
+  }
+
+  .report-print-root .text-content-primary {
+    color: #121214 !important;
+  }
+
+  .report-print-root .text-content-secondary {
+    color: #55555b !important;
+  }
+
+  .report-print-root .text-content-light {
+    color: #717175 !important;
+  }
+
+  .report-print-root .text-emerald-400 {
+    color: #047857 !important;
+  }
+
+  .report-print-root .text-red-400 {
+    color: #b91c1c !important;
+  }
+
+  .report-print-root .text-red-300 {
+    color: #b91c1c !important;
+  }
+
+  .report-print-root .text-amber-400 {
+    color: #b45309 !important;
+  }
+
+  .report-print-root .border-surface-3 {
+    border-color: #d5d4d9 !important;
+  }
+
+  .report-print-root a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  .report-print-root,
+  .report-print-root p,
+  .report-print-root li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .report-print-root svg {
+    max-width: 100%;
+  }
+
+  .report-print-root section > :first-child {
+    break-after: avoid-page;
+  }
+
+  .report-print-root article:not(.report-prompt-result),
+  .report-print-root .grid > div,
+  .report-print-root table tr {
+    break-inside: avoid-page;
+  }
+
+  .report-print-root table {
+    break-inside: auto;
+  }
+
+  .report-print-root thead {
+    display: table-header-group;
+  }
+
+  .report-print-root .overflow-hidden,
+  .report-print-root .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  .report-print-root .report-print-expandable {
+    break-inside: auto;
+  }
+
+  .report-print-root .report-print-expandable > summary {
+    display: none !important;
+  }
+
+  .report-print-root .report-print-expandable > :not(summary) {
+    display: block !important;
+  }
+
+  .report-print-root .report-print-answer > div::before {
+    content: "Исходный ответ";
+    display: block;
+    margin-bottom: 0.75rem;
+    color: #121214;
+    font-weight: 600;
+  }
+
+  .report-print-root .report-prompt-result > * {
+    break-inside: avoid-page;
+  }
+
+  .report-print-root .report-prompt-result > .report-print-expandable {
+    break-inside: auto;
+  }
+
+  .report-print-root h1,
+  .report-print-root h2,
+  .report-print-root h3,
+  .report-print-root h4 {
+    break-after: avoid-page;
+  }
 }
