@@ -6,11 +6,13 @@ import { EmptyState, ReportSection } from "./ReportPrimitives";
 type SourcesAnalysisProps = {
     citationRate: unknown;
     sources: SourceItem[];
+    originalLinksByDomain: Record<string, string[]>;
 };
 
 export default function SourcesAnalysis({
     citationRate,
     sources,
+    originalLinksByDomain,
 }: SourcesAnalysisProps) {
     return (
         <ReportSection
@@ -31,6 +33,8 @@ export default function SourcesAnalysis({
                 <div className="space-y-2">
                     {sources.map((source, index) => {
                         const href = externalHref(source.domain);
+                        const originalLinks =
+                            originalLinksByDomain[source.domain] || [];
                         return (
                             <div
                                 key={`${source.domain}-${index}`}
@@ -69,6 +73,31 @@ export default function SourcesAnalysis({
                                     </Tag>
                                 ) : (
                                     <Tag>Без упоминания бренда</Tag>
+                                )}
+                                {originalLinks.length > 0 && (
+                                    <details className="report-print-expandable w-full rounded-xl bg-surface-2/70">
+                                        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-content-secondary hover:text-content-primary select-none">
+                                            Показать оригинальные ссылки (
+                                            {originalLinks.length})
+                                        </summary>
+                                        <ul className="border-t border-surface-3 p-4 space-y-2">
+                                            {originalLinks.map((link) => (
+                                                <li
+                                                    key={link}
+                                                    className="text-sm break-all"
+                                                >
+                                                    <a
+                                                        href={link}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="text-accent-2 hover:underline"
+                                                    >
+                                                        {link}
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </details>
                                 )}
                             </div>
                         );
