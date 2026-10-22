@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import ArrowRight from "@/assets/arrow_right.svg?react";
+import Dashboard from "@/components/dashboard/dashboard";
 import GradientButton from "@/components/ui/GradientButton";
 
 const TEST_USER_ID = "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
@@ -101,6 +102,7 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                     <ArrowRight className="w-5 h-5 text-content-light group-hover:text-accent-2 transition-transform group-hover:translate-x-1 shrink-0" />
                 </Link>
             </div>
+            <Dashboard projectId={project.id} className="mb-4 mt-4" />
         </div>
     );
 }

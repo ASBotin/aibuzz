@@ -134,7 +134,11 @@ export async function runReportPipeline(
 
         const { data: report, error: reportErr } = await supabase
             .from('reports')
-            .insert({ project_id: projectId, status: 'processing' })
+            .insert({
+                project_id: projectId,
+                status: 'processing',
+                prompts_total: 0
+            })
             .select()
             .single();
 
@@ -168,6 +172,17 @@ export async function runReportPipeline(
         const validSearchRecords = searchResults.filter((record): record is PromptResultRow => record !== null);
         if (validSearchRecords.length === 0) {
             throw new Error('Не удалось получить ни одного ответа от Perplexity');
+        }
+
+        const { error: promptsTotalErr } = await supabase
+            .from('reports')
+            .update({ prompts_total: validSearchRecords.length })
+            .eq('id', reportId);
+
+        if (promptsTotalErr) {
+            throw new Error(
+                `Ошибка записи количества промптов: ${promptsTotalErr.message}`
+            );
         }
 
         // --- 2. ИЗВЛЕЧЕНИЕ ---

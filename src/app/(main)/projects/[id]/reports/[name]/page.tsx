@@ -105,6 +105,12 @@ export default async function ReportPage({ params }: PageProps) {
       ? (customByPromptId.get(result.prompt_id) ?? null)
       : null,
   }));
+  const promptCount =
+    typeof report.prompts_total === "number" &&
+    Number.isInteger(report.prompts_total) &&
+    report.prompts_total >= 0
+      ? report.prompts_total
+      : promptResults.length;
   const h2hItems = (
     Array.isArray(report.h2h_matrix) ? report.h2h_matrix : []
   ) as H2HItem[];
@@ -219,7 +225,7 @@ export default async function ReportPage({ params }: PageProps) {
         shareOfVoice={shareOfVoice}
         sentiment={sentiment}
         averageRank={report.average_rank}
-        promptCount={promptResults.length}
+        promptCount={promptCount}
       />
 
       <ReportSummary

@@ -1,6 +1,7 @@
 import { formatNumber } from "@/features/reports/utils";
 import type { SentimentIndex } from "@/features/reports/types";
-import { MetricCard, PieMetricCard, ReportSection } from "./ReportPrimitives";
+import { PieMetricCard } from "@/components/charts/PieMetricCard";
+import { MetricCard, ReportSection } from "./ReportPrimitives";
 
 type ReportMetricsProps = {
     projectName: string;
