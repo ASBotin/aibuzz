@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import SentimentPieChart from "./sentiment_pie";
 import SovPieChart from "./sov_pie";
+import ShareOfVoiceHistoryChart, {
+    type ShareOfVoiceHistoryPoint,
+} from "./sov_history_chart";
+import SentimentHistoryChart, {
+    type SentimentHistoryPoint,
+} from "./sentiment_history_chart";
 
 export type DashboardPeriod = "all_time" | "range" | "since_settings_change";
-export type Sentiment =
-    | "positive"
-    | "neutral"
-    | "negative";
+export type Sentiment = "positive" | "neutral" | "negative";
 
 export interface ShareOfVoiceDistributionItem {
     brand: string;
@@ -16,28 +19,18 @@ export interface ShareOfVoiceDistributionItem {
     isTarget?: boolean;
 }
 
-export interface ShareOfVoiceHistoryItem {
-    date: string;
-    values: Record<string, number>;
-}
-
 export interface SentimentDistributionItem {
     sentiment: Sentiment;
     value: number;
 }
 
-export interface SentimentHistoryItem {
-    date: string;
-    positive: number;
-    neutral: number;
-    negative: number;
-}
+export type SentimentHistoryItem = SentimentHistoryPoint;
 
 export interface DashboardResponse {
     promptsTotal: number;
     shareOfVoice: {
         distribution: ShareOfVoiceDistributionItem[];
-        history: ShareOfVoiceHistoryItem[];
+        history: ShareOfVoiceHistoryPoint[];
     };
     sentiment: {
         distribution: SentimentDistributionItem[];
@@ -50,7 +43,7 @@ export interface DashboardChartComponents {
         data: ShareOfVoiceDistributionItem[];
     }>;
     shareOfVoiceHistory: ComponentType<{
-        data: ShareOfVoiceHistoryItem[];
+        data: ShareOfVoiceHistoryPoint[];
     }>;
     sentimentPie: ComponentType<{
         data: SentimentDistributionItem[];
@@ -106,19 +99,6 @@ function isDashboardResponse(value: unknown): value is DashboardResponse {
         Array.isArray(shareOfVoice?.history) &&
         Array.isArray(sentiment?.distribution) &&
         Array.isArray(sentiment?.history)
-    );
-}
-
-function ChartPlaceholder({ title }: { title: string }) {
-    return (
-        <section className="flex min-h-56 flex-col rounded-2xl border border-dashed border-surface-3 bg-surface-2 p-4">
-            <h3 className="text-sm font-semibold text-content-primary">
-                {title}
-            </h3>
-            <div className="flex flex-1 items-center justify-center text-center text-sm text-content-secondary">
-                Компонент графика будет добавлен отдельно
-            </div>
-        </section>
     );
 }
 
@@ -204,10 +184,11 @@ export default function Dashboard({
     }, [projectId, endpoint, period, from, to, invalidRange]);
 
     const ShareOfVoicePie = chartComponents?.shareOfVoicePie ?? SovPieChart;
-    const ShareOfVoiceHistory = chartComponents?.shareOfVoiceHistory;
-    const SentimentPie =
-        chartComponents?.sentimentPie ?? SentimentPieChart;
-    const SentimentHistory = chartComponents?.sentimentHistory;
+    const ShareOfVoiceHistory =
+        chartComponents?.shareOfVoiceHistory ?? ShareOfVoiceHistoryChart;
+    const SentimentPie = chartComponents?.sentimentPie ?? SentimentPieChart;
+    const SentimentHistory =
+        chartComponents?.sentimentHistory ?? SentimentHistoryChart;
 
     const periodButtonClass = (selected: boolean) =>
         [
@@ -294,16 +275,16 @@ export default function Dashboard({
             {(validationError || error) && (
                 <div
                     role="alert"
-                    className="mt-5 rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-400"
+                    className="mt-5 rounded-3xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-400"
                 >
                     {validationError || error}
                 </div>
             )}
 
             <div className="mt-5">
-                <section className="rounded-2xl border border-surface-3 bg-surface-2 p-4">
+                <section className="rounded-3xl bg-surface-2 p-4">
                     <p className="text-sm font-medium text-content-secondary">
-                        Обработано промптов
+                        Обработано ответов
                     </p>
                     <div className="mt-2 flex items-baseline gap-2">
                         <span className="text-3xl font-semibold tracking-tight text-content-primary">
@@ -321,40 +302,21 @@ export default function Dashboard({
             </div>
 
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                {isLoading && !validationError ? (
+                {data && !validationError ? (
                     <>
-                        <ChartPlaceholder title="SoV по брендам" />
-                        <ChartPlaceholder title="Изменение SoV" />
-                        <ChartPlaceholder title="Сентимент" />
-                        <ChartPlaceholder title="Изменение сентимента" />
+                        <ShareOfVoicePie
+                            data={data.shareOfVoice.distribution}
+                        />
+                        <ShareOfVoiceHistory
+                            data={data.shareOfVoice.history}
+                        />
+                        <SentimentPie data={data.sentiment.distribution} />
+                        <SentimentHistory data={data.sentiment.history} />
                     </>
-                ) : data && !validationError ? (
-                    <>
-                        {ShareOfVoicePie ? (
-                            <ShareOfVoicePie
-                                data={data.shareOfVoice.distribution}
-                            />
-                        ) : (
-                            <ChartPlaceholder title="SoV по брендам" />
-                        )}
-                        {ShareOfVoiceHistory ? (
-                            <ShareOfVoiceHistory
-                                data={data.shareOfVoice.history}
-                            />
-                        ) : (
-                            <ChartPlaceholder title="Изменение SoV" />
-                        )}
-                        {SentimentPie ? (
-                            <SentimentPie data={data.sentiment.distribution} />
-                        ) : (
-                            <ChartPlaceholder title="Сентимент" />
-                        )}
-                        {SentimentHistory ? (
-                            <SentimentHistory data={data.sentiment.history} />
-                        ) : (
-                            <ChartPlaceholder title="Изменение сентимента" />
-                        )}
-                    </>
+                ) : isLoading && !validationError ? (
+                    <p role="status" className="text-sm text-content-secondary">
+                        Загрузка статистики...
+                    </p>
                 ) : (
                     <p className="text-sm text-content-secondary">
                         Данные статистики пока недоступны.

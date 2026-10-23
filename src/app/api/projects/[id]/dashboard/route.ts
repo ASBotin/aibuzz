@@ -16,6 +16,7 @@ type ReportRow = {
     id: string;
     created_at: string;
     prompts_total: number | null;
+    share_of_voice: number | null;
     competitors_breakdown: unknown;
 };
 
@@ -135,7 +136,9 @@ export async function GET(
 
         const reportsQuery = supabase
             .from("reports")
-            .select("id, created_at, prompts_total, competitors_breakdown")
+            .select(
+                "id, created_at, prompts_total, share_of_voice, competitors_breakdown",
+            )
             .eq("project_id", projectId)
             .eq("status", "completed")
             .order("created_at", { ascending: true })
@@ -283,29 +286,6 @@ export async function GET(
             ]),
         ) as Record<SentimentCategory, number>;
 
-        const shareOfVoiceByDate = new Map<
-            string,
-            { totals: Record<string, number>; count: number }
-        >();
-        for (const report of reports) {
-            const date = report.created_at.slice(0, 10);
-            const competitorMetrics = getCompetitorMetrics(
-                report.competitors_breakdown,
-                project.name,
-            );
-            const shareOfVoiceDay = shareOfVoiceByDate.get(date) ?? {
-                totals: {},
-                count: 0,
-            };
-            for (const metric of competitorMetrics) {
-                shareOfVoiceDay.totals[metric.name] =
-                    (shareOfVoiceDay.totals[metric.name] ?? 0) + metric.sov;
-            }
-            shareOfVoiceDay.count += 1;
-            shareOfVoiceByDate.set(date, shareOfVoiceDay);
-
-        }
-
         return NextResponse.json({
             promptsTotal,
             shareOfVoice: {
@@ -316,17 +296,17 @@ export async function GET(
                         isTarget: true,
                     },
                 ],
-                history: [...shareOfVoiceByDate.entries()].map(
-                    ([date, { totals, count }]) => ({
-                        date,
-                        values: Object.fromEntries(
-                            Object.entries(totals).map(([brand, total]) => [
-                                brand,
-                                Number((total / count).toFixed(1)),
-                            ]),
-                        ),
-                    }),
-                ),
+                history: reports.map((report) => ({
+                    reportId: report.id,
+                    date: report.created_at,
+                    value: finiteNumber(report.share_of_voice),
+                    values: Object.fromEntries(
+                        getCompetitorMetrics(
+                            report.competitors_breakdown,
+                            project.name,
+                        ).map(({ name, sov }) => [name, sov]),
+                    ),
+                })),
             },
             sentiment: {
                 distribution: SENTIMENT_CATEGORIES.map((sentiment) => ({

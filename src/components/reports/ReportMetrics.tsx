@@ -70,7 +70,7 @@ export default function ReportMetrics({
                     <MetricCard
                         label="Средний ранг"
                         value={formatNumber(averageRank)}
-                        detail="Меньше — лучше позиция в выдаче"
+                        detail="Средняя позиция бренда в ответах по основным промптам"
                     />
                     <MetricCard
                         label="Обработано ответов"

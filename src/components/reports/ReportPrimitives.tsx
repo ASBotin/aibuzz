@@ -28,7 +28,7 @@ export function ReportSection({
 
 export function EmptyState({ text }: { text: string }) {
     return (
-        <div className="rounded-2xl border border-surface-3 bg-surface-2 px-4 py-6 text-sm text-content-secondary">
+        <div className="rounded-3xl bg-surface-2 px-4 py-6 text-sm text-content-secondary">
             {text}
         </div>
     );
@@ -44,7 +44,7 @@ export function MetricCard({
     detail?: string;
 }) {
     return (
-        <div className="rounded-2xl bg-surface-2 border border-surface-3 p-4 min-w-0">
+        <div className="rounded-3xl bg-surface-2 p-4 min-w-0">
             <div className="text-xs text-content-secondary mb-2">{label}</div>
             <div className="text-2xl font-semibold tracking-tight text-content-primary break-words">
                 {value}

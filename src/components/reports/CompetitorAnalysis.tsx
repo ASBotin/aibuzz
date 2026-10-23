@@ -25,7 +25,7 @@ export default function CompetitorAnalysis({
                         {comparisons.map((item, index) => (
                             <article
                                 key={`${item.brand}-${index}`}
-                                className={`rounded-2xl border p-5 md:p-6 ${item.is_target ? "border-accent-2/40 bg-accent-2/5" : "border-surface-3 bg-surface-1"}`}
+                                className={`rounded-3xl border p-5 md:p-6 ${item.is_target ? "border-accent-2/40 bg-accent-2/5" : "border-surface-3 bg-surface-1"}`}
                             >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="flex items-center gap-3 min-w-0">
