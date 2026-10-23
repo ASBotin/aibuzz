@@ -25,7 +25,7 @@ export default function CompetitorAnalysis({
                         {comparisons.map((item, index) => (
                             <article
                                 key={`${item.brand}-${index}`}
-                                className={`rounded-3xl border p-5 md:p-6 ${item.is_target ? "border-accent-2/40 bg-accent-2/5" : "border-surface-3 bg-surface-1"}`}
+                                className={`rounded-3xl p-5 md:p-6 ${item.is_target ? "border border-accent-2/40 bg-accent-2/5" : "bg-surface-1"}`}
                             >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="flex items-center gap-3 min-w-0">
@@ -56,7 +56,7 @@ export default function CompetitorAnalysis({
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
                                     <div className="space-y-3">
-                                        <h4 className="text-sm font-semibold text-emerald-400">
+                                        <h4 className="text-lg font-semibold text-content-primary">
                                             Сильные стороны
                                         </h4>
                                         <StringList
@@ -66,7 +66,7 @@ export default function CompetitorAnalysis({
                                         />
                                     </div>
                                     <div className="space-y-3">
-                                        <h4 className="text-sm font-semibold text-red-400">
+                                        <h4 className="text-l font-semibold text-content-primary">
                                             Слабые стороны
                                         </h4>
                                         <StringList

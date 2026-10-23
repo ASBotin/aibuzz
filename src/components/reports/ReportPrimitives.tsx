@@ -12,11 +12,11 @@ export function ReportSection({
     return (
         <section className="space-y-4">
             <div className="space-y-1">
-                <h2 className="text-xl font-semibold text-content-primary">
+                <h2 className="text-2xl font-semibold text-content-primary">
                     {title}
                 </h2>
                 {description && (
-                    <p className="text-sm text-content-secondary">
+                    <p className="text-base text-content-secondary">
                         {description}
                     </p>
                 )}
@@ -45,12 +45,14 @@ export function MetricCard({
 }) {
     return (
         <div className="rounded-3xl bg-surface-2 p-4 min-w-0">
-            <div className="text-xs text-content-secondary mb-2">{label}</div>
+            <div className="text-sm text-content-primary mb-2">{label}</div>
             <div className="text-2xl font-semibold tracking-tight text-content-primary break-words">
                 {value}
             </div>
             {detail && (
-                <div className="text-xs text-content-light mt-1">{detail}</div>
+                <div className="text-xs text-content-secondary mt-1">
+                    {detail}
+                </div>
             )}
         </div>
     );
@@ -81,7 +83,7 @@ export function StringList({
             {values.map((value, index) => (
                 <li
                     key={`${value}-${index}`}
-                    className="flex gap-2 text-sm text-content-secondary leading-relaxed"
+                    className="flex gap-2 text-base text-content-secondary leading-relaxed"
                 >
                     <span className={`${marker} shrink-0`}>•</span>
                     <span>{value}</span>

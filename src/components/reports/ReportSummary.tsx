@@ -15,10 +15,10 @@ export default function ReportSummary({
         <ReportSection title="Итоги анализа">
             {summary ? (
                 <div className="rounded-3xl bg-surface-1 p-6 md:p-7">
-                    <h3 className="text-sm font-semibold text-content-primary mb-3">
+                    <h3 className="text-xl font-semibold text-content-primary mb-3">
                         Общее резюме
                     </h3>
-                    <div className="text-sm md:text-base text-content-secondary whitespace-pre-line leading-7">
+                    <div className="text-base text-content-primary whitespace-pre-line leading-7">
                         {summary}
                     </div>
                 </div>
@@ -28,10 +28,10 @@ export default function ReportSummary({
 
             {brandDirectSummary && (
                 <div className="rounded-3xl bg-surface-1 p-6 md:p-7">
-                    <h3 className="text-sm font-semibold text-content-primary mb-3">
+                    <h3 className="text-xl font-semibold text-content-primary mb-3">
                         Прямые запросы о бренде
                     </h3>
-                    <div className="text-sm text-content-secondary whitespace-pre-line leading-7">
+                    <div className="text-base text-content-primary whitespace-pre-line leading-7">
                         {brandDirectSummary}
                     </div>
                 </div>
@@ -39,10 +39,10 @@ export default function ReportSummary({
 
             {headToHeadSummary?.trim() && (
                 <div className="rounded-3xl bg-surface-1 p-6 md:p-7">
-                    <h3 className="text-sm font-semibold text-content-primary mb-3">
+                    <h3 className="text-xl font-semibold text-content-primary mb-3">
                         Итог сравнения с конкурентами
                     </h3>
-                    <div className="text-sm text-content-secondary whitespace-pre-line leading-7">
+                    <div className="text-base text-content-primary whitespace-pre-line leading-7">
                         {headToHeadSummary}
                     </div>
                 </div>

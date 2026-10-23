@@ -186,7 +186,7 @@ export default async function ReportPage({ params }: PageProps) {
                 </Link>
                 <Link
                     href={`/projects/${projectId}`}
-                    className="text-sm text-content-secondary hover:text-accent-2 transition-colors"
+                    className="text-sm text-content-secondary hover:text-content-primary transition-colors"
                 >
                     К проекту →
                 </Link>
