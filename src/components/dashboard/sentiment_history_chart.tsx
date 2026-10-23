@@ -11,6 +11,7 @@ import {
 } from "recharts";
 
 export interface SentimentHistoryPoint {
+    reportId: string;
     date: string;
     positive: number;
     neutral: number;
@@ -45,7 +46,6 @@ function formatAxisDate(timestamp: number): string {
         : new Intl.DateTimeFormat("ru-RU", {
               day: "2-digit",
               month: "short",
-              timeZone: "UTC",
           }).format(date);
 }
 
@@ -56,7 +56,9 @@ function formatTooltipDate(value: string): string {
               day: "numeric",
               month: "long",
               year: "numeric",
-              timeZone: "UTC",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
           }).format(date)
         : value;
 }
@@ -125,7 +127,7 @@ export default function SentimentHistoryChart({
 }: SentimentHistoryChartProps) {
     const points: ChartPoint[] = data.flatMap((point) => {
         const date = parseDate(point.date);
-        if (!date) return [];
+        if (!point.reportId || !date) return [];
 
         return [
             {
@@ -140,17 +142,18 @@ export default function SentimentHistoryChart({
                     : NaN,
             },
         ];
-    });
+    }).sort(
+        (left, right) =>
+            left.timestamp - right.timestamp ||
+            left.reportId.localeCompare(right.reportId),
+    );
 
     const timestamps = points.map((point) => point.timestamp);
     const minTimestamp = Math.min(...timestamps);
     const maxTimestamp = Math.max(...timestamps);
     const xDomain: [number | "dataMin", number | "dataMax"] =
         minTimestamp === maxTimestamp
-            ? [
-                  minTimestamp - 12 * 60 * 60 * 1000,
-                  maxTimestamp + 12 * 60 * 60 * 1000,
-              ]
+            ? [minTimestamp - 60 * 60 * 1000, maxTimestamp + 60 * 60 * 1000]
             : ["dataMin", "dataMax"];
 
     return (

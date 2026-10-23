@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import ArrowRight from "@/assets/arrow_right.svg?react";
 import Dashboard from "@/components/dashboard/dashboard";
 import GradientButton from "@/components/ui/GradientButton";
+import DeleteProjectButton from "./DeleteProjectButton";
 
 const TEST_USER_ID = "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
 
@@ -34,13 +35,14 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
 
     return (
         <div className="max-w-5xl mx-auto py-12 px-4">
-            <div className="mb-6">
+            <div className="mb-6 flex items-start justify-between gap-4">
                 <Link
                     href="/projects"
                     className="text-sm text-content-secondary hover:text-content-primary inline-flex items-center gap-1.5"
                 >
                     ← Все проекты
                 </Link>
+                <DeleteProjectButton projectId={id} />
             </div>
 
             <div className="bg-surface-1 rounded-3xl p-8 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 select-none">

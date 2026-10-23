@@ -195,10 +195,10 @@ export async function GET(
             neutral: 0,
             negative: 0,
         };
-        const reportDates = new Map(
-            reports.map((report) => [report.id, report.created_at.slice(0, 10)]),
+        const reportTimestamps = new Map(
+            reports.map((report) => [report.id, report.created_at]),
         );
-        const sentimentByDate = new Map<
+        const sentimentByReport = new Map<
             string,
             { counts: SentimentCounts; total: number }
         >();
@@ -232,8 +232,7 @@ export async function GET(
             }
 
             for (const prompt of promptRows) {
-                const date = reportDates.get(prompt.report_id);
-                if (!date) {
+                if (!reportTimestamps.has(prompt.report_id)) {
                     throw new Error(
                         `Результат промпта связан с неизвестным отчётом: ${prompt.report_id}`,
                     );
@@ -257,13 +256,15 @@ export async function GET(
                 sentimentCounts[sentiment] += 1;
                 sentimentPromptCount += 1;
 
-                const sentimentDay = sentimentByDate.get(date) ?? {
+                const sentimentReport = sentimentByReport.get(
+                    prompt.report_id,
+                ) ?? {
                     counts: { positive: 0, neutral: 0, negative: 0 },
                     total: 0,
                 };
-                sentimentDay.counts[sentiment] += 1;
-                sentimentDay.total += 1;
-                sentimentByDate.set(date, sentimentDay);
+                sentimentReport.counts[sentiment] += 1;
+                sentimentReport.total += 1;
+                sentimentByReport.set(prompt.report_id, sentimentReport);
             }
         }
 
@@ -313,20 +314,27 @@ export async function GET(
                     sentiment,
                     value: aggregateSentiment[sentiment],
                 })),
-                history: [...sentimentByDate.entries()].map(
-                    ([date, { counts, total }]) => ({
-                        date,
-                        positive: Number(
-                            ((counts.positive / total) * 100).toFixed(1),
-                        ),
-                        neutral: Number(
-                            ((counts.neutral / total) * 100).toFixed(1),
-                        ),
-                        negative: Number(
-                            ((counts.negative / total) * 100).toFixed(1),
-                        ),
-                    }),
-                ),
+                history: reports.flatMap((report) => {
+                    const sentimentReport = sentimentByReport.get(report.id);
+                    if (!sentimentReport) return [];
+
+                    const { counts, total } = sentimentReport;
+                    return [
+                        {
+                            reportId: report.id,
+                            date: report.created_at,
+                            positive: Number(
+                                ((counts.positive / total) * 100).toFixed(1),
+                            ),
+                            neutral: Number(
+                                ((counts.neutral / total) * 100).toFixed(1),
+                            ),
+                            negative: Number(
+                                ((counts.negative / total) * 100).toFixed(1),
+                            ),
+                        },
+                    ];
+                }),
             },
         });
     } catch (error: unknown) {

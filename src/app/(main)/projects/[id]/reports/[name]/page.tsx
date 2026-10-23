@@ -19,6 +19,7 @@ import {
     formatDate,
     statusLabel,
 } from "@/features/reports/utils";
+import DeleteReportButton from "./DeleteReportButton";
 import ExportPdfButton from "./ExportPdfButton";
 
 const TEST_USER_ID =
@@ -212,8 +213,12 @@ export default async function ReportPage({ params }: PageProps) {
                                 : `Создан: ${formatDate(report.created_at)}`}
                         </p>
                     </div>
-                    <div className="flex shrink-0 items-start">
+                    <div className="flex shrink-0 flex-col items-stretch gap-2">
                         <ExportPdfButton />
+                        <DeleteReportButton
+                            projectId={projectId}
+                            reportId={reportId}
+                        />
                     </div>
                 </div>
                 {report.error_message && (
