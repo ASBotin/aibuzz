@@ -41,7 +41,21 @@ export type PromptResult = {
     sentiment?: string | null;
     found_competitors?: string[] | null;
     extracted_domains?: string[] | null;
+    mentioned_keywords?: string[] | null;
+    domain_mentioned?: boolean | null;
+    mentioned_pages?: string[] | null;
     brands_pros_cons?: Record<string, BrandProsCons> | null;
+};
+
+export type KeywordMentionItem = {
+    keyword: string;
+    count: number;
+    percentage: number;
+};
+
+export type TrackedSources = {
+    domain: { value: string; count: number } | null;
+    pages: Array<{ url: string; count: number }>;
 };
 
 export type SentimentIndex = {

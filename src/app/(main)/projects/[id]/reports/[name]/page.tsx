@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import CompetitorAnalysis from "@/components/reports/CompetitorAnalysis";
+import KeywordMentionsChart from "@/components/reports/KeywordMentionsChart";
 import PromptResults from "@/components/reports/PromptResults";
 import ReportMetrics from "@/components/reports/ReportMetrics";
 import ReportSummary from "@/components/reports/ReportSummary";
@@ -10,9 +11,11 @@ import Tag from "@/components/ui/Tag";
 import type {
     CompetitorItem,
     H2HItem,
+    KeywordMentionItem,
     PromptResult,
     SentimentIndex,
     SourceItem,
+    TrackedSources,
 } from "@/features/reports/types";
 import {
     externalHref,
@@ -42,7 +45,7 @@ export default async function ReportPage({ params }: PageProps) {
 
     const { data: project, error: projectError } = await supabase
         .from("projects")
-        .select("id, name, niche")
+        .select("id, name, niche, domain")
         .eq("id", projectId)
         .eq("user_id", TEST_USER_ID)
         .single();
@@ -126,6 +129,35 @@ export default async function ReportPage({ params }: PageProps) {
     const topSources = (
         Array.isArray(report.top_sources) ? report.top_sources : []
     ) as SourceItem[];
+    const keywordBreakdown = (
+        Array.isArray(report.keywords_breakdown)
+            ? report.keywords_breakdown
+            : []
+    ) as KeywordMentionItem[];
+    const keywordMentions = keywordBreakdown.filter(
+        (item): item is KeywordMentionItem =>
+            item &&
+            typeof item.keyword === "string" &&
+            item.keyword.trim().length > 0 &&
+            typeof item.count === "number" &&
+            Number.isFinite(item.count) &&
+            typeof item.percentage === "number" &&
+            Number.isFinite(item.percentage),
+    );
+    const trackedSources =
+        report.tracked_sources &&
+        typeof report.tracked_sources === "object" &&
+        !Array.isArray(report.tracked_sources)
+            ? (report.tracked_sources as TrackedSources)
+            : null;
+    const trackedPages = Array.isArray(trackedSources?.pages)
+        ? trackedSources.pages.filter(
+              (page) =>
+                  typeof page.url === "string" &&
+                  typeof page.count === "number" &&
+                  Number.isFinite(page.count),
+          )
+        : [];
     const originalLinksByDomain = promptResults.reduce<
         Record<string, string[]>
     >((linksByDomain, result) => {
@@ -241,6 +273,10 @@ export default async function ReportPage({ params }: PageProps) {
                 promptCount={promptCount}
             />
 
+            {keywordMentions.length > 0 && (
+                <KeywordMentionsChart data={keywordMentions} />
+            )}
+
             <ReportSummary
                 summary={report.ai_summary}
                 brandDirectSummary={report.brand_direct_summary}
@@ -261,6 +297,8 @@ export default async function ReportPage({ params }: PageProps) {
                 citationRate={report.citation_rate}
                 sources={topSources}
                 originalLinksByDomain={originalLinksByDomain}
+                projectDomain={project.domain}
+                trackedPages={trackedPages}
             />
 
             <PromptResults

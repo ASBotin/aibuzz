@@ -1,14 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { executeSearch } from './1_search';
 import { executeExtraction } from './2_extractor';
-import { 
-    calculatePrimaryMetrics, 
-    calculateH2HMetrics, 
-    calculateSourceMetrics, 
-    getBrandProsCons,
-    ProjectContext, 
-    PromptResultData 
-} from './3_aggregator';
+import { calculatePrimaryMetrics, calculateH2HMetrics, calculateSourceMetrics, calculateKeywordMetrics, calculateTrackedSourceMetrics, getBrandProsCons, ProjectContext, PromptResultData } from './3_aggregator';
 import { generateReportSummary, SummarizerInput } from './4_summarizer';
 import { normalizeBrandName } from '../utils/normName';
 
@@ -16,19 +9,18 @@ type H2HMatrixItem = SummarizerInput['h2hMatrix'][number];
 
 function cleanStringList(value: unknown): string[] {
     if (!Array.isArray(value)) return [];
-    return [...new Set(
-        value
-            .filter((item): item is string => typeof item === 'string')
-            .map(item => item.trim())
-            .filter(Boolean)
-    )].slice(0, 3);
+    return [
+        ...new Set(
+            value
+                .filter((item): item is string => typeof item === 'string')
+                .map((item) => item.trim())
+                .filter(Boolean),
+        ),
+    ].slice(0, 3);
 }
 
 // Оставляем только целевой бренд и конкурентов из настроек проекта.
-function filterH2HMatrixToProjectBrands(
-    matrix: H2HMatrixItem[],
-    context: ProjectContext,
-): H2HMatrixItem[] {
+function filterH2HMatrixToProjectBrands(matrix: H2HMatrixItem[], context: ProjectContext): H2HMatrixItem[] {
     const targetNorm = normalizeBrandName(context.targetBrand);
     const allowedBrands = new Map<string, string>();
     allowedBrands.set(targetNorm, context.targetBrand);
@@ -48,15 +40,15 @@ function filterH2HMatrixToProjectBrands(
         if (!configuredName || seen.has(norm)) return [];
         seen.add(norm);
 
-        return [{
-            brand: configuredName,
-            is_target: norm === targetNorm,
-            average_rank: typeof item.average_rank === 'number' && Number.isFinite(item.average_rank)
-                ? item.average_rank
-                : null,
-            pros: cleanStringList(item.pros),
-            cons: cleanStringList(item.cons),
-        }];
+        return [
+            {
+                brand: configuredName,
+                is_target: norm === targetNorm,
+                average_rank: typeof item.average_rank === 'number' && Number.isFinite(item.average_rank) ? item.average_rank : null,
+                pros: cleanStringList(item.pros),
+                cons: cleanStringList(item.cons),
+            },
+        ];
     });
 }
 
@@ -75,14 +67,13 @@ export interface PromptResultRow {
     sentiment?: 'positive' | 'neutral' | 'negative' | 'not_found' | null;
     found_competitors?: string[] | null;
     extracted_domains?: string[] | null;
+    mentioned_keywords?: string[] | null;
+    domain_mentioned?: boolean | null;
+    mentioned_pages?: string[] | null;
     brands_pros_cons?: Record<string, { pros: string[]; cons: string[] }> | null;
 }
 
-async function processInBatches<T, R>(
-    items: T[], 
-    batchSize: number, 
-    processor: (item: T) => Promise<R>
-): Promise<Array<R | null>> {
+async function processInBatches<T, R>(items: T[], batchSize: number, processor: (item: T) => Promise<R>): Promise<Array<R | null>> {
     const results: Array<R | null> = [];
     for (let i = 0; i < items.length; i += batchSize) {
         const batch = items.slice(i, i + batchSize);
@@ -95,33 +86,23 @@ async function processInBatches<T, R>(
                     console.error('[Batch Processing Error]:', error);
                     return null;
                 }
-            })
+            }),
         );
         results.push(...batchResults);
     }
     return results;
 }
 
-export async function runReportPipeline(
-    supabase: SupabaseClient, 
-    projectId: string
-): Promise<void> {
+export async function runReportPipeline(supabase: SupabaseClient, projectId: string): Promise<void> {
     let reportId: string | null = null;
 
     try {
         // --- 0. ИНИЦИАЛИЗАЦИЯ ---
-        const { data: project, error: projectErr } = await supabase
-            .from('projects')
-            .select('*')
-            .eq('id', projectId)
-            .single();
+        const { data: project, error: projectErr } = await supabase.from('projects').select('*').eq('id', projectId).single();
 
         if (projectErr || !project) throw new Error('Проект не найден');
 
-        const { data: prompts, error: promptsErr } = await supabase
-            .from('prompts')
-            .select('*')
-            .eq('project_id', projectId);
+        const { data: prompts, error: promptsErr } = await supabase.from('prompts').select('*').eq('project_id', projectId);
 
         if (promptsErr || !prompts || prompts.length === 0) {
             throw new Error('У проекта нет доступных промптов');
@@ -129,7 +110,7 @@ export async function runReportPipeline(
 
         const projectContext: ProjectContext = {
             targetBrand: project.name,
-            competitors: project.competitors || []
+            competitors: project.competitors || [],
         };
 
         const { data: report, error: reportErr } = await supabase
@@ -137,7 +118,7 @@ export async function runReportPipeline(
             .insert({
                 project_id: projectId,
                 status: 'processing',
-                prompts_total: 0
+                prompts_total: 0,
             })
             .select()
             .single();
@@ -149,7 +130,7 @@ export async function runReportPipeline(
         const searchResults = await processInBatches(prompts, 3, async (prompt) => {
             const searchData = await executeSearch(prompt.text);
             const isExcluded = prompt.category === 'brand_direct';
-            
+
             const { data: insertedResult, error: insertErr } = await supabase
                 .from('prompt_results')
                 .insert({
@@ -160,7 +141,7 @@ export async function runReportPipeline(
                     provider: 'perplexity',
                     raw_text: searchData.rawText,
                     raw_citations: searchData.citations,
-                    is_excluded_from_stats: isExcluded
+                    is_excluded_from_stats: isExcluded,
                 })
                 .select()
                 .single();
@@ -174,24 +155,23 @@ export async function runReportPipeline(
             throw new Error('Не удалось получить ни одного ответа от Perplexity');
         }
 
-        const { error: promptsTotalErr } = await supabase
-            .from('reports')
-            .update({ prompts_total: validSearchRecords.length })
-            .eq('id', reportId);
+        const { error: promptsTotalErr } = await supabase.from('reports').update({ prompts_total: validSearchRecords.length }).eq('id', reportId);
 
         if (promptsTotalErr) {
-            throw new Error(
-                `Ошибка записи количества промптов: ${promptsTotalErr.message}`
-            );
+            throw new Error(`Ошибка записи количества промптов: ${promptsTotalErr.message}`);
         }
 
         // --- 2. ИЗВЛЕЧЕНИЕ ---
-        await processInBatches(validSearchRecords, 5, async (record: PromptResultRow) => {
+        const extractionResults = await processInBatches(validSearchRecords, 5, async (record: PromptResultRow) => {
             const extractionMetrics = await executeExtraction({
                 rawText: record.raw_text,
+                rawCitations: record.raw_citations || [],
                 targetBrand: project.name,
                 category: record.prompt_category,
-                competitors: project.competitors || []
+                competitors: project.competitors || [],
+                keywords: Array.isArray(project.keywords) ? project.keywords : [],
+                domain: project.domain || null,
+                pages: Array.isArray(project.pages) ? project.pages : [],
             });
 
             const { error: updateErr } = await supabase
@@ -202,20 +182,23 @@ export async function runReportPipeline(
                     sentiment: extractionMetrics.sentiment,
                     found_competitors: extractionMetrics.found_competitors,
                     extracted_domains: extractionMetrics.extracted_domains,
-                    brands_pros_cons: extractionMetrics.brands_pros_cons
+                    mentioned_keywords: extractionMetrics.mentioned_keywords,
+                    domain_mentioned: extractionMetrics.domain_mentioned,
+                    mentioned_pages: extractionMetrics.mentioned_pages,
+                    brands_pros_cons: extractionMetrics.brands_pros_cons,
                 })
                 .eq('id', record.id);
 
             if (updateErr) throw new Error(`Ошибка обновления метрик Pass 2: ${updateErr.message}`);
             return true;
         });
+        const failedExtractions = extractionResults.filter((result) => result === null).length;
+        if (failedExtractions > 0) {
+            throw new Error(`Не удалось извлечь и сохранить метрики для ${failedExtractions} ответов.`);
+        }
 
         // --- 3. АГРЕГАЦИЯ ---
-        const { data: finalResults, error: finalErr } = await supabase
-            .from('prompt_results')
-            .select('*')
-            .eq('report_id', reportId)
-            .not('brand_mentioned', 'is', null);
+        const { data: finalResults, error: finalErr } = await supabase.from('prompt_results').select('*').eq('report_id', reportId).not('brand_mentioned', 'is', null);
 
         if (finalErr || !finalResults) throw new Error('Ошибка чтения результатов для агрегации');
 
@@ -229,34 +212,39 @@ export async function runReportPipeline(
                 sentiment: r.sentiment || 'not_found',
                 found_competitors: r.found_competitors || [],
                 extracted_domains: r.extracted_domains || [],
-                brands_pros_cons: r.brands_pros_cons || {} 
-            }
+                mentioned_keywords: r.mentioned_keywords || [],
+                domain_mentioned: r.domain_mentioned || false,
+                mentioned_pages: r.mentioned_pages || [],
+                brands_pros_cons: r.brands_pros_cons || {},
+            },
         }));
 
         const primaryMetrics = calculatePrimaryMetrics(aggregatorInput, projectContext);
         const h2hMetrics = calculateH2HMetrics(aggregatorInput, projectContext);
-        const projectH2HMatrix = filterH2HMatrixToProjectBrands(
-            h2hMetrics.h2h_matrix,
-            projectContext,
-        );
+        const projectH2HMatrix = filterH2HMatrixToProjectBrands(h2hMetrics.h2h_matrix, projectContext);
         const sourceMetrics = calculateSourceMetrics(aggregatorInput);
+        const keywordMetrics = calculateKeywordMetrics(aggregatorInput, Array.isArray(project.keywords) ? project.keywords : []);
+        const trackedSourceMetrics = calculateTrackedSourceMetrics(aggregatorInput, project.domain, Array.isArray(project.pages) ? project.pages : []);
 
         // --- 4. ФИНАЛЬНОЕ РЕЗЮМЕ И ЗАПИСЬ ---
-        const brandDirectResults = aggregatorInput.filter(p => p.prompt_category === 'brand_direct');
-        const directBrandProsCons = brandDirectResults.length > 0 ? {
-            pros: brandDirectResults.flatMap(p => getBrandProsCons(p.metrics.brands_pros_cons, projectContext.targetBrand).pros),
-            cons: brandDirectResults.flatMap(p => getBrandProsCons(p.metrics.brands_pros_cons, projectContext.targetBrand).cons)
-        } : undefined;
+        const brandDirectResults = aggregatorInput.filter((p) => p.prompt_category === 'brand_direct');
+        const directBrandProsCons =
+            brandDirectResults.length > 0
+                ? {
+                      pros: brandDirectResults.flatMap((p) => getBrandProsCons(p.metrics.brands_pros_cons, projectContext.targetBrand).pros),
+                      cons: brandDirectResults.flatMap((p) => getBrandProsCons(p.metrics.brands_pros_cons, projectContext.targetBrand).cons),
+                  }
+                : undefined;
 
         const summarizerInput: SummarizerInput = {
             targetBrand: projectContext.targetBrand,
             shareOfVoice: primaryMetrics.share_of_voice,
             averageRank: primaryMetrics.average_rank,
             sentimentIndex: primaryMetrics.sentiment_index,
-            topCompetitors: primaryMetrics.competitors_breakdown.slice(0, 3).map(c => ({ name: c.name, sov: c.sov })),
-            topSources: sourceMetrics.top_sources.slice(0, 3).map(s => ({ domain: s.domain, count: s.count })),
+            topCompetitors: primaryMetrics.competitors_breakdown.slice(0, 3).map((c) => ({ name: c.name, sov: c.sov })),
+            topSources: sourceMetrics.top_sources.slice(0, 3).map((s) => ({ domain: s.domain, count: s.count })),
             h2hMatrix: projectH2HMatrix,
-            directBrandProsCons
+            directBrandProsCons,
         };
 
         const textSummaries = await generateReportSummary(summarizerInput);
@@ -273,24 +261,25 @@ export async function runReportPipeline(
                 h2h_summary: textSummaries.h2h_summary,
                 competitors_breakdown: primaryMetrics.competitors_breakdown,
                 top_sources: sourceMetrics.top_sources,
+                keywords_breakdown: keywordMetrics,
+                tracked_sources: trackedSourceMetrics,
                 ai_summary: textSummaries.ai_summary,
                 brand_direct_summary: textSummaries.brand_direct_summary,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
             })
             .eq('id', reportId);
 
         if (finishErr) throw new Error(`Ошибка финальной записи отчета: ${finishErr.message}`);
-
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
         console.error('[Pipeline Critical Error]:', error);
         if (reportId) {
             await supabase
                 .from('reports')
-                .update({ 
-                    status: 'failed', 
+                .update({
+                    status: 'failed',
                     error_message: errorMessage,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
                 })
                 .eq('id', reportId);
         }
