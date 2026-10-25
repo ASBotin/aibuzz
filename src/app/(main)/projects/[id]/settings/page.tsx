@@ -10,6 +10,8 @@ import {
     createEmptyProjectFormData,
     MAX_COMPETITORS,
     MAX_DESCRIPTION_LENGTH,
+    MAX_KEYWORDS,
+    MAX_PAGES,
     MAX_PROMPTS,
     type ProjectFormData,
     type ProjectPrompt,
@@ -24,7 +26,10 @@ type ProjectSettingsResponse = {
         country?: string;
         city?: string;
         description?: string;
+        domain?: string | null;
         competitors?: string[];
+        keywords?: string[] | null;
+        pages?: string[] | null;
     };
     prompts: {
         id: string;
@@ -46,6 +51,8 @@ export default function ProjectSettingsPage() {
         createEmptyProjectFormData,
     );
     const [competitors, setCompetitors] = useState<string[]>([]);
+    const [keywords, setKeywords] = useState<string[]>([]);
+    const [pages, setPages] = useState<string[]>([""]);
     const [prompts, setPrompts] = useState<ProjectPrompt[]>([]);
 
     const [loading, setLoading] = useState(true);
@@ -67,18 +74,22 @@ export default function ProjectSettingsPage() {
                 setFormData({
                     brandName: data.project.name || "",
                     niche: data.project.niche || "",
+                    domain: data.project.domain || "",
                     country: data.project.country || "",
                     city: data.project.city || "",
                     description: data.project.description || "",
                 });
                 setCompetitors(data.project.competitors || []);
+                setKeywords(data.project.keywords || []);
+                setPages(
+                    data.project.pages?.length ? data.project.pages : [""],
+                );
                 setPrompts(
                     data.prompts.map((prompt) => ({
                         id: prompt.id,
                         text: prompt.text,
                         category: prompt.category,
-                        isCustom:
-                            prompt.isCustom ?? prompt.is_custom ?? false,
+                        isCustom: prompt.isCustom ?? prompt.is_custom ?? false,
                     })),
                 );
             } catch (err: unknown) {
@@ -125,6 +136,22 @@ export default function ProjectSettingsPage() {
             return;
         }
 
+        if (keywords.length > MAX_KEYWORDS) {
+            setActiveTab("general");
+            setError(
+                `Можно указать не более ${MAX_KEYWORDS} ключевых слов. Удалите лишние, чтобы сохранить настройки.`,
+            );
+            return;
+        }
+
+        if (pages.filter((page) => page.trim()).length > MAX_PAGES) {
+            setActiveTab("general");
+            setError(
+                `Можно указать не более ${MAX_PAGES} ссылок. Удалите лишние, чтобы сохранить настройки.`,
+            );
+            return;
+        }
+
         if (prompts.length > MAX_PROMPTS) {
             setActiveTab("prompts");
             setError(`В проекте может быть не более ${MAX_PROMPTS} промптов.`);
@@ -141,6 +168,8 @@ export default function ProjectSettingsPage() {
                     body: JSON.stringify({
                         projectData: formData,
                         competitors,
+                        keywords,
+                        pages: pages.map((page) => page.trim()).filter(Boolean),
                         prompts: prompts.map(
                             ({ text, category, isCustom }) => ({
                                 text,
@@ -249,8 +278,12 @@ export default function ProjectSettingsPage() {
                 <ProjectDetailsForm
                     value={formData}
                     competitors={competitors}
+                    keywords={keywords}
+                    pages={pages}
                     onChange={handleInputChange}
                     onCompetitorsChange={setCompetitors}
+                    onKeywordsChange={setKeywords}
+                    onPagesChange={setPages}
                 />
             </div>
 

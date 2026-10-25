@@ -1,6 +1,7 @@
 export type ProjectFormData = {
     brandName: string;
     niche: string;
+    domain: string;
     country: string;
     city: string;
     description: string;
@@ -17,6 +18,8 @@ export type ProjectPrompt = {
 
 export const MAX_DESCRIPTION_LENGTH = 500;
 export const MAX_COMPETITORS = 10;
+export const MAX_KEYWORDS = 10;
+export const MAX_PAGES = 5;
 export const MAX_PROMPTS = 25;
 
 export const PROMPT_CATEGORIES: {
@@ -48,6 +51,7 @@ export function createEmptyProjectFormData(): ProjectFormData {
     return {
         brandName: "",
         niche: "",
+        domain: "",
         country: "",
         city: "",
         description: "",

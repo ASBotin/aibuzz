@@ -1,47 +1,180 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { CircleHelp, Plus, X } from "lucide-react";
 import {
     MAX_COMPETITORS,
     MAX_DESCRIPTION_LENGTH,
+    MAX_KEYWORDS,
+    MAX_PAGES,
     type ProjectFormData,
 } from "@/features/projects";
 
 type ProjectDetailsFormProps = {
     value: ProjectFormData;
     competitors: string[];
+    keywords: string[];
+    pages: string[];
     onChange: (field: keyof ProjectFormData, value: string) => void;
     onCompetitorsChange: (competitors: string[]) => void;
+    onKeywordsChange: (keywords: string[]) => void;
+    onPagesChange: (pages: string[]) => void;
 };
 
 const inputClassName =
     "w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-2.5 text-content-primary focus:outline-none focus:border-accent-2 focus:ring-1 focus:ring-accent-2 transition-colors";
 
-export default function ProjectDetailsForm({
-    value,
-    competitors,
-    onChange,
-    onCompetitorsChange,
-}: ProjectDetailsFormProps) {
-    const competitorInputRef = useRef<HTMLInputElement>(null);
-    const [competitorInput, setCompetitorInput] = useState("");
+function FieldLabel({
+    htmlFor,
+    children,
+    hint,
+}: {
+    htmlFor: string;
+    children: string;
+    hint: string;
+}) {
+    return (
+        <div className="flex items-center gap-1.5">
+            <label
+                htmlFor={htmlFor}
+                className="text-sm font-medium text-content-secondary"
+            >
+                {children}
+            </label>
+            <span className="group relative inline-flex">
+                <button
+                    type="button"
+                    aria-label={`Подсказка: ${children}`}
+                    className="text-content-light hover:text-accent-2 focus-visible:text-accent-2 focus-visible:outline-none"
+                >
+                    <CircleHelp size={15} aria-hidden="true" />
+                </button>
+                <span
+                    role="tooltip"
+                    className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-56 -translate-x-1/2 rounded-xl border border-surface-3 bg-surface-2 px-3 py-2 text-xs font-normal leading-relaxed text-content-secondary opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                >
+                    {hint}
+                </span>
+            </span>
+        </div>
+    );
+}
 
-    const handleAddCompetitor = (event: KeyboardEvent<HTMLInputElement>) => {
+function TagInput({
+    id,
+    label,
+    placeholder,
+    items,
+    maxItems,
+    onChange,
+}: {
+    id: string;
+    label: string;
+    placeholder: string;
+    items: string[];
+    maxItems: number;
+    onChange: (items: string[]) => void;
+}) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [inputValue, setInputValue] = useState("");
+
+    const addItem = (event: KeyboardEvent<HTMLInputElement>) => {
         if (event.key !== "Enter" && event.key !== ",") return;
 
         event.preventDefault();
-        const competitor = competitorInput.trim().replace(/,$/, "");
-
+        const item = inputValue.trim().replace(/,$/, "");
         if (
-            competitor &&
-            !competitors.includes(competitor) &&
-            competitors.length < MAX_COMPETITORS
+            item &&
+            !items.some(
+                (existing) => existing.toLowerCase() === item.toLowerCase(),
+            ) &&
+            items.length < maxItems
         ) {
-            onCompetitorsChange([...competitors, competitor]);
+            onChange([...items, item]);
         }
-        setCompetitorInput("");
+        setInputValue("");
     };
 
+    return (
+        <div className="space-y-2">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+                <FieldLabel
+                    htmlFor={id}
+                    hint={
+                        id === "competitor-input"
+                            ? "Укажите конкурентов, чтобы сравнивать их присутствие с вашим брендом."
+                            : "Перечислите здесь альтернативные написания, названия продуктов, торговых марок и т.д., всё что вы хотите отследить отдельно"
+                    }
+                >
+                    {label}
+                </FieldLabel>
+                <span className="text-xs text-content-light tabular-nums">
+                    {items.length} / {maxItems}
+                </span>
+            </div>
+            <div
+                className="flex flex-wrap items-center gap-2 w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-2 min-h-[48px] focus-within:border-accent-2 focus-within:ring-1 focus-within:ring-accent-2 transition-colors cursor-text"
+                onClick={() => inputRef.current?.focus()}
+            >
+                {items.map((item) => (
+                    <span
+                        key={item}
+                        className="flex items-center gap-1.5 bg-surface-1 text-content-primary px-3 py-1 rounded-full text-sm select-none border border-content-light/20"
+                    >
+                        {item}
+                        <button
+                            type="button"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onChange(
+                                    items.filter((value) => value !== item),
+                                );
+                            }}
+                            aria-label={`Удалить: ${item}`}
+                            className="text-content-light hover:text-content-secondary focus:outline-none cursor-pointer"
+                        >
+                            <X size={14} aria-hidden="true" />
+                        </button>
+                    </span>
+                ))}
+                <input
+                    ref={inputRef}
+                    id={id}
+                    type="text"
+                    value={inputValue}
+                    onChange={(event) => setInputValue(event.target.value)}
+                    onKeyDown={addItem}
+                    disabled={items.length >= maxItems}
+                    placeholder={
+                        items.length === 0
+                            ? placeholder
+                            : items.length >= maxItems
+                              ? "Лимит достигнут"
+                              : ""
+                    }
+                    aria-label={`Добавить: ${label.toLowerCase()}`}
+                    className="flex-1 min-w-[200px] bg-transparent outline-none text-content-primary placeholder:text-content-light disabled:cursor-not-allowed"
+                />
+            </div>
+            <p className="text-xs text-content-secondary mt-1 select-none">
+                {items.length >= maxItems
+                    ? `Достигнут лимит: ${maxItems}.`
+                    : "Нажмите Enter или запятую, чтобы добавить"}
+            </p>
+        </div>
+    );
+}
+
+export default function ProjectDetailsForm({
+    value,
+    competitors,
+    keywords,
+    pages,
+    onChange,
+    onCompetitorsChange,
+    onKeywordsChange,
+    onPagesChange,
+}: ProjectDetailsFormProps) {
     const updateField = (
         event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     ) => {
@@ -51,44 +184,44 @@ export default function ProjectDetailsForm({
         );
     };
 
-    const removeCompetitor = (competitorToRemove: string) => {
-        onCompetitorsChange(
-            competitors.filter(
-                (competitor) => competitor !== competitorToRemove,
+    const updatePage = (index: number, page: string) => {
+        onPagesChange(
+            pages.map((current, pageIndex) =>
+                pageIndex === index ? page : current,
             ),
         );
     };
 
     return (
         <div className="space-y-6">
+            <div className="max-w-full space-y-2">
+                <FieldLabel
+                    htmlFor="brandName-input"
+                    hint="Название бренда будет использоваться для генерации запросов и анализа ответов."
+                >
+                    Название бренда/компании*
+                </FieldLabel>
+                <input
+                    id="brandName-input"
+                    type="text"
+                    name="brandName"
+                    value={value.brandName}
+                    onChange={updateField}
+                    placeholder="Название вашего бренда"
+                    required
+                    aria-required="true"
+                    className={inputClassName}
+                />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                    <label
-                        htmlFor="brandName-input"
-                        className="text-sm font-medium text-content-secondary"
-                    >
-                        Название бренда/компании*
-                    </label>
-                    <input
-                        id="brandName-input"
-                        type="text"
-                        name="brandName"
-                        value={value.brandName}
-                        onChange={updateField}
-                        placeholder="Название вашего бренда"
-                        required
-                        aria-required="true"
-                        className={inputClassName}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <label
+                    <FieldLabel
                         htmlFor="niche-input"
-                        className="text-sm font-medium text-content-secondary"
+                        hint="Сфера помогает сформировать релевантные запросы для исследования."
                     >
                         Сфера деятельности*
-                    </label>
+                    </FieldLabel>
                     <input
                         id="niche-input"
                         type="text"
@@ -101,92 +234,115 @@ export default function ProjectDetailsForm({
                         className={inputClassName}
                     />
                 </div>
+
+                <div className="space-y-2">
+                    <FieldLabel
+                        htmlFor="domain-input"
+                        hint="Основной домен сайта. Позволит отслеживать его упоминания в ответах нейросети."
+                    >
+                        Домен
+                    </FieldLabel>
+                    <input
+                        id="domain-input"
+                        type="text"
+                        name="domain"
+                        value={value.domain}
+                        onChange={updateField}
+                        placeholder="Например, example.ru"
+                        className={inputClassName}
+                    />
+                </div>
             </div>
 
             <div className="space-y-2">
-                <div className="flex justify-between items-center gap-3">
-                    <label
-                        htmlFor="competitor-input"
-                        className="text-sm font-medium text-content-secondary"
+                <div className="flex items-center justify-between gap-3">
+                    <FieldLabel
+                        htmlFor="pages-input-0"
+                        hint="Добавьте до 5 важных страниц сайта, чтобы отдельно отслеживать их упоминания и ссылки."
                     >
-                        Конкуренты
-                    </label>
-                    <span className="text-xs text-content-light">
-                        {competitors.length} / {MAX_COMPETITORS}
+                        Ссылки
+                    </FieldLabel>
+                    <span className="text-xs text-content-light tabular-nums">
+                        {pages.filter((page) => page.trim()).length} /{" "}
+                        {MAX_PAGES}
                     </span>
                 </div>
-                <div
-                    className="flex flex-wrap items-center gap-2 w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-2 min-h-[48px] focus-within:border-accent-2 focus-within:ring-1 focus-within:ring-accent-2 transition-colors cursor-text"
-                    onClick={() => competitorInputRef.current?.focus()}
-                >
-                    {competitors.map((competitor) => (
-                        <span
-                            key={competitor}
-                            className="flex items-center gap-1.5 bg-surface-1 text-content-primary px-3 py-1 rounded-full text-sm select-none border border-content-light/20"
-                        >
-                            {competitor}
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    removeCompetitor(competitor);
-                                }}
-                                aria-label={`Удалить конкурента ${competitor}`}
-                                className="text-content-light hover:text-content-secondary focus:outline-none cursor-pointer"
-                            >
-                                <svg
-                                    aria-hidden="true"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
+                <div className="space-y-2">
+                    {(pages.length > 0 ? pages : [""]).map((page, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            <input
+                                id={`pages-input-${index}`}
+                                type="url"
+                                value={page}
+                                onChange={(event) =>
+                                    updatePage(index, event.target.value)
+                                }
+                                placeholder="https://example.ru/page"
+                                aria-label={`Ссылка ${index + 1}`}
+                                className={inputClassName}
+                            />
+                            {index > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        onPagesChange(
+                                            pages.filter(
+                                                (_, pageIndex) =>
+                                                    pageIndex !== index,
+                                            ),
+                                        )
+                                    }
+                                    aria-label={`Удалить ссылку ${index + 1}`}
+                                    className="shrink-0 rounded-full p-2 text-content-light hover:bg-surface-1 hover:text-content-primary"
                                 >
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        </span>
+                                    <X size={18} aria-hidden="true" />
+                                </button>
+                            )}
+                            {index === pages.length - 1 &&
+                                page.trim() &&
+                                pages.length < MAX_PAGES && (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            onPagesChange([...pages, ""])
+                                        }
+                                        aria-label="Добавить ссылку"
+                                        className="shrink-0 rounded-full p-2 text-accent-2 transition-colors hover:bg-surface-1"
+                                    >
+                                        <Plus size={18} aria-hidden="true" />
+                                    </button>
+                                )}
+                        </div>
                     ))}
-                    <input
-                        ref={competitorInputRef}
-                        id="competitor-input"
-                        type="text"
-                        value={competitorInput}
-                        onChange={(event) =>
-                            setCompetitorInput(event.target.value)
-                        }
-                        onKeyDown={handleAddCompetitor}
-                        disabled={competitors.length >= MAX_COMPETITORS}
-                        placeholder={
-                            competitors.length === 0
-                                ? "Перечислите основных конкурентов"
-                                : competitors.length >= MAX_COMPETITORS
-                                  ? "Лимит достигнут"
-                                  : ""
-                        }
-                        aria-label="Добавить конкурента"
-                        className="flex-1 min-w-[200px] bg-transparent outline-none text-content-primary placeholder:text-content-light disabled:cursor-not-allowed"
-                    />
                 </div>
-                <p className="text-xs text-content-secondary mt-1 select-none">
-                    {competitors.length >= MAX_COMPETITORS
-                        ? `Достигнут лимит: ${MAX_COMPETITORS} конкурентов.`
-                        : "Нажмите Enter или запятую, чтобы добавить конкурента"}
-                </p>
             </div>
+
+            <TagInput
+                id="competitor-input"
+                label="Конкуренты"
+                placeholder="Перечислите основных конкурентов"
+                items={competitors}
+                maxItems={MAX_COMPETITORS}
+                onChange={onCompetitorsChange}
+            />
+
+            <TagInput
+                id="keyword-input"
+                label="Ключевые слова"
+                placeholder="Например, название вашего продукта"
+                items={keywords}
+                maxItems={MAX_KEYWORDS}
+                onChange={onKeywordsChange}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                    <label
+                    <FieldLabel
                         htmlFor="country-input"
-                        className="text-sm font-medium text-content-secondary"
+                        hint="Страна задаёт географический контекст запросов и ответов."
                     >
                         Страна
-                    </label>
+                    </FieldLabel>
                     <input
                         id="country-input"
                         type="text"
@@ -199,12 +355,12 @@ export default function ProjectDetailsForm({
                 </div>
 
                 <div className="space-y-2">
-                    <label
+                    <FieldLabel
                         htmlFor="city-input"
-                        className="text-sm font-medium text-content-secondary"
+                        hint="Город помогает учитывать локальные рекомендации и результаты."
                     >
                         Город
-                    </label>
+                    </FieldLabel>
                     <input
                         id="city-input"
                         type="text"
@@ -219,12 +375,12 @@ export default function ProjectDetailsForm({
 
             <div className="space-y-2">
                 <div className="flex justify-between items-center gap-3">
-                    <label
+                    <FieldLabel
                         htmlFor="description-input"
-                        className="text-sm font-medium text-content-secondary"
+                        hint="Дополнительная информация о компании помогает точнее составить запросы."
                     >
                         Краткое описание
-                    </label>
+                    </FieldLabel>
                     <span className="text-xs text-content-light tabular-nums">
                         Ещё {MAX_DESCRIPTION_LENGTH - value.description.length}
                     </span>

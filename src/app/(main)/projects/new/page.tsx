@@ -15,6 +15,8 @@ export default function NewProjectPage() {
         createEmptyProjectFormData,
     );
     const [competitors, setCompetitors] = useState<string[]>([]);
+    const [keywords, setKeywords] = useState<string[]>([]);
+    const [pages, setPages] = useState<string[]>([""]);
 
     const handleInputChange = (field: keyof ProjectFormData, value: string) => {
         setFormData((previous) => ({ ...previous, [field]: value }));
@@ -26,6 +28,8 @@ export default function NewProjectPage() {
         const projectData = {
             ...formData,
             competitors,
+            keywords,
+            pages: pages.map((page) => page.trim()).filter(Boolean),
         };
 
         sessionStorage.setItem("pendingProject", JSON.stringify(projectData));
@@ -41,8 +45,12 @@ export default function NewProjectPage() {
             <ProjectDetailsForm
                 value={formData}
                 competitors={competitors}
+                keywords={keywords}
+                pages={pages}
                 onChange={handleInputChange}
                 onCompetitorsChange={setCompetitors}
+                onKeywordsChange={setKeywords}
+                onPagesChange={setPages}
             />
 
             <div className="pt-6 flex justify-end">
