@@ -171,7 +171,7 @@ export async function executeExtraction(params: ExtractionParams): Promise<Extra
         let parsedMetrics: ExtractionMetrics | undefined;
         let lastResponseError: Error | undefined;
 
-        for (const maxTokens of [2000, 3000]) {
+        for (const maxTokens of [2500, 4000]) {
             const response = await openaiClient.chat.completions.create({
                 model: 'gpt-6-luna-pro',
                 messages: [

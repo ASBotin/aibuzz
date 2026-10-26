@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { normalizeBrandName } from "@/utils/normName";
 
 const TEST_USER_ID =
     process.env.NEXT_PUBLIC_TEST_USER_ID ||
@@ -25,6 +26,8 @@ type PromptMetricRow = {
     prompt_category: string;
     brand_mentioned: boolean | null;
     sentiment: string | null;
+    brands_ranking: unknown;
+    mentioned_keywords: unknown;
 };
 
 type CompetitorMetric = {
@@ -117,7 +120,7 @@ export async function GET(
 
         const { data: project, error: projectError } = await supabase
             .from("projects")
-            .select("id, name, updated_at")
+            .select("id, name, updated_at, keywords")
             .eq("id", projectId)
             .eq("user_id", TEST_USER_ID)
             .maybeSingle();
@@ -186,9 +189,33 @@ export async function GET(
                     : 0)
             );
         }, 0);
+        const configuredKeywords = Array.isArray(project.keywords)
+            ? [
+                  ...new Map(
+                      project.keywords
+                          .filter(
+                              (keyword: unknown): keyword is string =>
+                                  typeof keyword === "string" &&
+                                  Boolean(keyword.trim()),
+                          )
+                          .map((keyword: string) => [
+                              keyword.trim().toLocaleLowerCase("ru-RU"),
+                              keyword.trim(),
+                          ]),
+                  ).values(),
+              ]
+            : [];
+        const keywordNamesByNormalized = new Map(
+            configuredKeywords.map((keyword) => [
+                keyword.toLocaleLowerCase("ru-RU"),
+                keyword,
+            ]),
+        );
 
         let mainPromptCount = 0;
         let targetMentionCount = 0;
+        let targetRankTotal = 0;
+        let targetRankCount = 0;
         let sentimentPromptCount = 0;
         const sentimentCounts: SentimentCounts = {
             positive: 0,
@@ -202,6 +229,12 @@ export async function GET(
             string,
             { counts: SentimentCounts; total: number }
         >();
+        const keywordCountsByReport = new Map<string, Map<string, number>>(
+            reports.map((report) => [
+                report.id,
+                new Map(configuredKeywords.map((keyword) => [keyword, 0])),
+            ]),
+        );
 
         if (reports.length > 0) {
             const reportIds = reports.map((report) => report.id);
@@ -212,7 +245,7 @@ export async function GET(
                     const { data: page, error: promptRowsError } = await supabase
                         .from("prompt_results")
                         .select(
-                            "report_id, prompt_category, brand_mentioned, sentiment",
+                            "report_id, prompt_category, brand_mentioned, sentiment, brands_ranking, mentioned_keywords",
                         )
                         .in("report_id", reportIdBatch)
                         .order("report_id", { ascending: true })
@@ -242,7 +275,65 @@ export async function GET(
                     mainPromptCount += 1;
                     if (prompt.brand_mentioned === true) {
                         targetMentionCount += 1;
+
+                        if (
+                            prompt.brands_ranking &&
+                            typeof prompt.brands_ranking === "object" &&
+                            !Array.isArray(prompt.brands_ranking)
+                        ) {
+                            const targetBrandNorm = normalizeBrandName(
+                                project.name,
+                            );
+                            const rank = Object.entries(
+                                prompt.brands_ranking,
+                            ).find(
+                                ([brand]) =>
+                                    normalizeBrandName(brand) ===
+                                    targetBrandNorm,
+                            )?.[1];
+                            if (
+                                typeof rank === "number" &&
+                                Number.isFinite(rank)
+                            ) {
+                                targetRankTotal += rank;
+                                targetRankCount += 1;
+                            }
+                        }
                     }
+                }
+
+                const reportKeywordCounts = keywordCountsByReport.get(
+                    prompt.report_id,
+                );
+                if (
+                    reportKeywordCounts &&
+                    Array.isArray(prompt.mentioned_keywords)
+                ) {
+                    const mentionedKeywords = new Set(
+                        prompt.mentioned_keywords
+                            .filter(
+                                (keyword): keyword is string =>
+                                    typeof keyword === "string",
+                            )
+                            .map(
+                                (keyword) =>
+                                    keywordNamesByNormalized.get(
+                                        keyword
+                                            .trim()
+                                            .toLocaleLowerCase("ru-RU"),
+                                    ),
+                            )
+                            .filter(
+                                (keyword): keyword is string =>
+                                    keyword !== undefined,
+                            ),
+                    );
+                    mentionedKeywords.forEach((keyword) => {
+                        reportKeywordCounts.set(
+                            keyword,
+                            (reportKeywordCounts.get(keyword) ?? 0) + 1,
+                        );
+                    });
                 }
 
                 if (
@@ -272,6 +363,10 @@ export async function GET(
             mainPromptCount > 0
                 ? Number(((targetMentionCount / mainPromptCount) * 100).toFixed(1))
                 : 0;
+        const averageRank =
+            targetRankCount > 0
+                ? Number((targetRankTotal / targetRankCount).toFixed(1))
+                : null;
         const aggregateSentiment = Object.fromEntries(
             SENTIMENT_CATEGORIES.map((category) => [
                 category,
@@ -289,6 +384,17 @@ export async function GET(
 
         return NextResponse.json({
             promptsTotal,
+            averageRank,
+            keywords: {
+                names: configuredKeywords,
+                history: reports.map((report) => ({
+                    reportId: report.id,
+                    date: report.created_at,
+                    values: Object.fromEntries(
+                        keywordCountsByReport.get(report.id) ?? [],
+                    ),
+                })),
+            },
             shareOfVoice: {
                 distribution: [
                     {

@@ -9,6 +9,9 @@ import ShareOfVoiceHistoryChart, {
 import SentimentHistoryChart, {
     type SentimentHistoryPoint,
 } from "./sentiment_history_chart";
+import KeywordHistoryChart, {
+    type KeywordHistoryPoint,
+} from "./keyword_history_chart";
 import StatusNotice from "@/components/ui/StatusNotice";
 
 export type DashboardPeriod = "all_time" | "range" | "since_settings_change";
@@ -29,6 +32,11 @@ export type SentimentHistoryItem = SentimentHistoryPoint;
 
 export interface DashboardResponse {
     promptsTotal: number;
+    averageRank: number | null;
+    keywords: {
+        names: string[];
+        history: KeywordHistoryPoint[];
+    };
     shareOfVoice: {
         distribution: ShareOfVoiceDistributionItem[];
         history: ShareOfVoiceHistoryPoint[];
@@ -51,6 +59,11 @@ export interface DashboardChartComponents {
     }>;
     sentimentHistory: ComponentType<{
         data: SentimentHistoryItem[];
+    }>;
+    keywordHistory: ComponentType<{
+        keywords: string[];
+        history: KeywordHistoryPoint[];
+        className?: string;
     }>;
 }
 
@@ -94,12 +107,19 @@ function isDashboardResponse(value: unknown): value is DashboardResponse {
     const shareOfVoice = response.shareOfVoice as
         Record<string, unknown> | undefined;
     const sentiment = response.sentiment as Record<string, unknown> | undefined;
+    const keywords = response.keywords as Record<string, unknown> | undefined;
 
     return (
+        (response.averageRank === null ||
+            (typeof response.averageRank === "number" &&
+                Number.isFinite(response.averageRank))) &&
         Array.isArray(shareOfVoice?.distribution) &&
         Array.isArray(shareOfVoice?.history) &&
         Array.isArray(sentiment?.distribution) &&
-        Array.isArray(sentiment?.history)
+        Array.isArray(sentiment?.history) &&
+        Array.isArray(keywords?.names) &&
+        keywords.names.every((keyword) => typeof keyword === "string") &&
+        Array.isArray(keywords?.history)
     );
 }
 
@@ -190,6 +210,8 @@ export default function Dashboard({
     const SentimentPie = chartComponents?.sentimentPie ?? SentimentPieChart;
     const SentimentHistory =
         chartComponents?.sentimentHistory ?? SentimentHistoryChart;
+    const KeywordHistory =
+        chartComponents?.keywordHistory ?? KeywordHistoryChart;
 
     const periodButtonClass = (selected: boolean) =>
         [
@@ -279,7 +301,7 @@ export default function Dashboard({
                 </StatusNotice>
             )}
 
-            <div className="mt-5">
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <section className="rounded-3xl bg-surface-2 p-4">
                     <p className="text-sm font-medium text-content-secondary">
                         Обработано ответов
@@ -291,6 +313,26 @@ export default function Dashboard({
                                 : (data?.promptsTotal ?? 0).toLocaleString(
                                       "ru-RU",
                                   )}
+                        </span>
+                        <span className="text-sm text-content-secondary">
+                            за выбранный период
+                        </span>
+                    </div>
+                </section>
+                <section className="rounded-3xl bg-surface-2 p-4">
+                    <p className="text-sm font-medium text-content-secondary">
+                        Средний ранг бренда
+                    </p>
+                    <div className="mt-2 flex items-baseline gap-2">
+                        <span className="text-3xl font-semibold tracking-tight text-content-primary">
+                            {isLoading || validationError
+                                ? "—"
+                                : data?.averageRank === null ||
+                                    data?.averageRank === undefined
+                                  ? "—"
+                                  : new Intl.NumberFormat("ru-RU", {
+                                        maximumFractionDigits: 1,
+                                    }).format(data.averageRank)}
                         </span>
                         <span className="text-sm text-content-secondary">
                             за выбранный период
@@ -310,6 +352,11 @@ export default function Dashboard({
                         />
                         <SentimentPie data={data.sentiment.distribution} />
                         <SentimentHistory data={data.sentiment.history} />
+                        <KeywordHistory
+                            keywords={data.keywords.names}
+                            history={data.keywords.history}
+                            className="xl:col-span-2"
+                        />
                     </>
                 ) : isLoading && !validationError ? (
                     <p role="status" className="text-sm text-content-secondary">

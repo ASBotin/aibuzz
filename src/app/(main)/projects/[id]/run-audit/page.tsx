@@ -78,7 +78,7 @@ export default function RunAuditPage() {
 
                 {success ? (
                     <AccentButton
-                        size="md"
+                        size="lg"
                         href={`/projects/${projectId}/reports`}
                     >
                         Перейти к отчетам
