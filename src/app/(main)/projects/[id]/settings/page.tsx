@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import ProjectDetailsForm from "@/components/projects/ProjectDetailsForm";
 import PromptEditor from "@/components/projects/PromptEditor";
 import AccentButton from "@/components/ui/AccentButton";
+import StatusNotice from "@/components/ui/StatusNotice";
 import {
     createEmptyProjectFormData,
     MAX_COMPETITORS,
@@ -228,15 +229,15 @@ export default function ProjectSettingsPage() {
             </div>
 
             {error && (
-                <div className="mb-6 p-4 bg-red-950/50 border border-red-800 text-red-200 rounded-2xl text-sm">
+                <StatusNotice variant="error" className="mb-6">
                     {error}
-                </div>
+                </StatusNotice>
             )}
 
             {successMsg && (
-                <div className="mb-6 p-4 bg-emerald-950/40 border border-emerald-800 text-emerald-200 rounded-2xl text-sm">
+                <StatusNotice variant="success" className="mb-6">
                     {successMsg}
-                </div>
+                </StatusNotice>
             )}
 
             <div
@@ -289,6 +290,18 @@ export default function ProjectSettingsPage() {
 
             <div hidden={activeTab !== "prompts"}>
                 <PromptEditor prompts={prompts} onChange={setPrompts} />
+                <div className="mt-6 flex flex-col items-start gap-3 border-t border-surface-3 pt-6">
+                    <p className="text-sm text-content-secondary">
+                        Сгенерируйте новый набор и замените им текущие промпты
+                        после проверки.
+                    </p>
+                    <AccentButton
+                        href={`/projects/new/createprompts?projectId=${projectId}`}
+                        size="md"
+                    >
+                        Сгенерировать промпты заново
+                    </AccentButton>
+                </div>
             </div>
         </div>
     );

@@ -2,17 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import StatusNotice from "@/components/ui/StatusNotice";
 
 export default function DeleteReportButton({
     projectId,
     reportId,
+    variant = "header",
 }: {
     projectId: string;
     reportId: string;
+    variant?: "header" | "list";
 }) {
     const router = useRouter();
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const isListVariant = variant === "list";
 
     async function deleteReport() {
         if (
@@ -67,7 +71,11 @@ export default function DeleteReportButton({
                 type="button"
                 onClick={() => void deleteReport()}
                 disabled={isDeleting}
-                className="no-print inline-flex items-center justify-center gap-2 rounded-full border border-white/40 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:cursor-wait disabled:opacity-60"
+                className={`no-print inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-wait disabled:opacity-60 ${
+                    isListVariant
+                        ? "border border-red-500/30 bg-red-500/10 text-red-700 hover:bg-red-500/20 focus-visible:ring-red-500/50"
+                        : "border border-white/40 text-white hover:bg-white/15 focus-visible:ring-white/80"
+                }`}
                 aria-label="Удалить отчёт"
             >
                 <svg
@@ -87,12 +95,13 @@ export default function DeleteReportButton({
                 {isDeleting ? "Удаление..." : "Удалить отчёт"}
             </button>
             {error && (
-                <p
-                    className="max-w-52 text-xs text-white"
-                    role="alert"
+                <StatusNotice
+                    variant="error"
+                    compact
+                    className={`max-w-52 text-xs ${isListVariant ? "" : "border-white/25 bg-white/90"}`}
                 >
                     {error}
-                </p>
+                </StatusNotice>
             )}
         </div>
     );

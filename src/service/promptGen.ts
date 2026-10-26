@@ -97,7 +97,7 @@ export async function generateProjectPrompts(
 
   try {
     const response = await openaiClient.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-6-luna-pro',
       messages: [{ role: 'system', content: systemPrompt }],
       response_format: { type: 'json_object' },
       temperature: 0.6,

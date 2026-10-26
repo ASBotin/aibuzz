@@ -6,6 +6,7 @@ import { generateReportSummary, SummarizerInput } from './4_summarizer';
 import { normalizeBrandName } from '../utils/normName';
 
 type H2HMatrixItem = SummarizerInput['h2hMatrix'][number];
+const MAX_FAILED_EXTRACTIONS = 5;
 
 function cleanStringList(value: unknown): string[] {
     if (!Array.isArray(value)) return [];
@@ -73,17 +74,23 @@ export interface PromptResultRow {
     brands_pros_cons?: Record<string, { pros: string[]; cons: string[] }> | null;
 }
 
-async function processInBatches<T, R>(items: T[], batchSize: number, processor: (item: T) => Promise<R>): Promise<Array<R | null>> {
+async function processInBatches<T, R>(
+    items: T[],
+    batchSize: number,
+    processor: (item: T) => Promise<R>,
+    onError: (item: T, error: unknown) => void = (_item, error) => {
+        console.error('[Batch Processing Error]:', error);
+    },
+): Promise<Array<R | null>> {
     const results: Array<R | null> = [];
     for (let i = 0; i < items.length; i += batchSize) {
         const batch = items.slice(i, i + batchSize);
-        //eslint-disable-next-line no-await-in-loop
         const batchResults = await Promise.all(
             batch.map(async (item) => {
                 try {
                     return await processor(item);
                 } catch (error: unknown) {
-                    console.error('[Batch Processing Error]:', error);
+                    onError(item, error);
                     return null;
                 }
             }),
@@ -151,6 +158,12 @@ export async function runReportPipeline(supabase: SupabaseClient, projectId: str
         });
 
         const validSearchRecords = searchResults.filter((record): record is PromptResultRow => record !== null);
+        const failedSearches = searchResults.length - validSearchRecords.length;
+        if (failedSearches > MAX_FAILED_EXTRACTIONS) {
+            throw new Error(
+                `Не удалось получить ответы для ${failedSearches} запросов. Допустимый предел — ${MAX_FAILED_EXTRACTIONS}.`,
+            );
+        }
         if (validSearchRecords.length === 0) {
             throw new Error('Не удалось получить ни одного ответа от Perplexity');
         }
@@ -162,39 +175,64 @@ export async function runReportPipeline(supabase: SupabaseClient, projectId: str
         }
 
         // --- 2. ИЗВЛЕЧЕНИЕ ---
-        const extractionResults = await processInBatches(validSearchRecords, 5, async (record: PromptResultRow) => {
-            const extractionMetrics = await executeExtraction({
-                rawText: record.raw_text,
-                rawCitations: record.raw_citations || [],
-                targetBrand: project.name,
-                category: record.prompt_category,
-                competitors: project.competitors || [],
-                keywords: Array.isArray(project.keywords) ? project.keywords : [],
-                domain: project.domain || null,
-                pages: Array.isArray(project.pages) ? project.pages : [],
-            });
+        const extractionResults = await processInBatches(
+            validSearchRecords,
+            5,
+            async (record: PromptResultRow) => {
+                const extractionMetrics = await executeExtraction({
+                    rawText: record.raw_text,
+                    rawCitations: record.raw_citations || [],
+                    targetBrand: project.name,
+                    category: record.prompt_category,
+                    competitors: project.competitors || [],
+                    keywords: Array.isArray(project.keywords) ? project.keywords : [],
+                    domain: project.domain || null,
+                    pages: Array.isArray(project.pages) ? project.pages : [],
+                });
 
-            const { error: updateErr } = await supabase
-                .from('prompt_results')
-                .update({
-                    brand_mentioned: extractionMetrics.brand_mentioned,
-                    brands_ranking: extractionMetrics.brands_ranking,
-                    sentiment: extractionMetrics.sentiment,
-                    found_competitors: extractionMetrics.found_competitors,
-                    extracted_domains: extractionMetrics.extracted_domains,
-                    mentioned_keywords: extractionMetrics.mentioned_keywords,
-                    domain_mentioned: extractionMetrics.domain_mentioned,
-                    mentioned_pages: extractionMetrics.mentioned_pages,
-                    brands_pros_cons: extractionMetrics.brands_pros_cons,
-                })
-                .eq('id', record.id);
+                const { error: updateErr } = await supabase
+                    .from('prompt_results')
+                    .update({
+                        brand_mentioned: extractionMetrics.brand_mentioned,
+                        brands_ranking: extractionMetrics.brands_ranking,
+                        sentiment: extractionMetrics.sentiment,
+                        found_competitors: extractionMetrics.found_competitors,
+                        extracted_domains: extractionMetrics.extracted_domains,
+                        mentioned_keywords: extractionMetrics.mentioned_keywords,
+                        domain_mentioned: extractionMetrics.domain_mentioned,
+                        mentioned_pages: extractionMetrics.mentioned_pages,
+                        brands_pros_cons: extractionMetrics.brands_pros_cons,
+                    })
+                    .eq('id', record.id);
 
-            if (updateErr) throw new Error(`Ошибка обновления метрик Pass 2: ${updateErr.message}`);
-            return true;
-        });
+                if (updateErr) throw new Error(`Ошибка обновления метрик Pass 2: ${updateErr.message}`);
+                return true;
+            },
+            (record, error) => {
+                console.error(
+                    `[Extraction Error] prompt_id=${record.prompt_id} result_id=${record.id} category=${record.prompt_category}:`,
+                    error,
+                );
+            },
+        );
         const failedExtractions = extractionResults.filter((result) => result === null).length;
-        if (failedExtractions > 0) {
-            throw new Error(`Не удалось извлечь и сохранить метрики для ${failedExtractions} ответов.`);
+        const successfulExtractions = extractionResults.length - failedExtractions;
+        const failedRequests = failedSearches + failedExtractions;
+        if (failedRequests > MAX_FAILED_EXTRACTIONS) {
+            throw new Error(
+                `Не удалось обработать ${failedRequests} запросов: ${failedSearches} ошибок поиска и ${failedExtractions} ошибок извлечения метрик. Допустимый предел — ${MAX_FAILED_EXTRACTIONS}.`,
+            );
+        }
+
+        const { error: extractedPromptsTotalErr } = await supabase
+            .from('reports')
+            .update({ prompts_total: successfulExtractions })
+            .eq('id', reportId);
+
+        if (extractedPromptsTotalErr) {
+            throw new Error(
+                `Ошибка записи количества обработанных промптов: ${extractedPromptsTotalErr.message}`,
+            );
         }
 
         // --- 3. АГРЕГАЦИЯ ---
@@ -247,7 +285,16 @@ export async function runReportPipeline(supabase: SupabaseClient, projectId: str
             directBrandProsCons,
         };
 
-        const textSummaries = await generateReportSummary(summarizerInput);
+        const textSummaries =
+            aggregatorInput.length > 0
+                ? await generateReportSummary(summarizerInput)
+                : {
+                      ai_summary:
+                          'Не удалось извлечь метрики ни для одного ответа. Данные отчёта отсутствуют.',
+                      brand_direct_summary: null,
+                      h2h_matrix: projectH2HMatrix,
+                      h2h_summary: null,
+                  };
 
         const { error: finishErr } = await supabase
             .from('reports')
@@ -274,7 +321,7 @@ export async function runReportPipeline(supabase: SupabaseClient, projectId: str
         const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
         console.error('[Pipeline Critical Error]:', error);
         if (reportId) {
-            await supabase
+            const { error: statusUpdateError } = await supabase
                 .from('reports')
                 .update({
                     status: 'failed',
@@ -282,6 +329,12 @@ export async function runReportPipeline(supabase: SupabaseClient, projectId: str
                     updated_at: new Date().toISOString(),
                 })
                 .eq('id', reportId);
+            if (statusUpdateError) {
+                console.error(
+                    `[Pipeline Status Update Error] report_id=${reportId}:`,
+                    statusUpdateError,
+                );
+            }
         }
         throw error;
     }

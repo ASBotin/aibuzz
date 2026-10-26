@@ -189,7 +189,7 @@ export default function SourcesAnalysis({
                                         </span>
                                     )}
                                     <span className="shrink-0 text-sm text-content-secondary">
-                                        {formatNumber(count, 0)} упоминаний
+                                        упоминаний {formatNumber(count, 0)}
                                     </span>
                                 </li>
                             );

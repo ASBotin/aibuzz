@@ -42,7 +42,7 @@ export async function executeSearch(prompt: string): Promise<SearchResult> {
         const response = await perplexityClient.chat.completions.create({
             model: 'sonar',
             messages: [{ role: 'user', content: prompt }],
-            max_tokens: 1200,
+            max_tokens: 1500,
         }) as unknown as PerplexityResponse;
 
         const choice = response.choices?.[0];

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import AccentButton from "@/components/ui/AccentButton";
 import GradientButton from "@/components/ui/GradientButton";
+import StatusNotice from "@/components/ui/StatusNotice";
 
 export default function RunAuditPage() {
     const params = useParams();
@@ -57,21 +58,27 @@ export default function RunAuditPage() {
                 <h1 className="text-2xl font-bold text-content-primary mb-2">
                     {success ? "Исследование запущено" : "Запуск исследования"}
                 </h1>
-                <p className="text-content-secondary text-sm mb-8 leading-relaxed">
-                    {success
-                        ? "Анализ успешно завершен. Результаты сохранены в системе."
-                        : "Система выполнит поисковые запросы, соберет данные из ИИ-источников, проанализирует упоминания бренда и сформирует итоговый отчет."}
-                </p>
+                {success ? (
+                    <StatusNotice variant="success" className="mb-8 text-left">
+                        Анализ успешно завершён. Результаты сохранены в системе.
+                    </StatusNotice>
+                ) : (
+                    <p className="text-content-secondary text-sm mb-8 leading-relaxed">
+                        Система выполнит поисковые запросы, соберет данные из
+                        ИИ-источников, проанализирует упоминания бренда и
+                        сформирует итоговый отчет.
+                    </p>
+                )}
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-950/50 border border-red-800 rounded-lg text-red-200 text-sm">
+                    <StatusNotice variant="error" className="mb-6 text-left">
                         {error}
-                    </div>
+                    </StatusNotice>
                 )}
 
                 {success ? (
                     <AccentButton
-                        size="sm"
+                        size="md"
                         href={`/projects/${projectId}/reports`}
                     >
                         Перейти к отчетам

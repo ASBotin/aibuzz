@@ -9,6 +9,7 @@ import ShareOfVoiceHistoryChart, {
 import SentimentHistoryChart, {
     type SentimentHistoryPoint,
 } from "./sentiment_history_chart";
+import StatusNotice from "@/components/ui/StatusNotice";
 
 export type DashboardPeriod = "all_time" | "range" | "since_settings_change";
 export type Sentiment = "positive" | "neutral" | "negative";
@@ -273,12 +274,9 @@ export default function Dashboard({
             )}
 
             {(validationError || error) && (
-                <div
-                    role="alert"
-                    className="mt-5 rounded-3xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-400"
-                >
+                <StatusNotice variant="error" className="mt-5">
                     {validationError || error}
-                </div>
+                </StatusNotice>
             )}
 
             <div className="mt-5">

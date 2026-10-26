@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AccentButton from "@/components/ui/AccentButton";
+import StatusNotice from "@/components/ui/StatusNotice";
 import PromptEditor from "@/components/projects/PromptEditor";
 import {
     MAX_PROMPTS,
@@ -22,11 +23,23 @@ export default function PromptsEditorPage() {
     const [prompts, setPrompts] = useState<ProjectPrompt[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [existingProjectId, setExistingProjectId] = useState<string | null>(
+        null,
+    );
 
     useEffect(() => {
+        const projectId = new URLSearchParams(window.location.search).get(
+            "projectId",
+        );
+        queueMicrotask(() => setExistingProjectId(projectId));
+
         const rawPrompts = sessionStorage.getItem("generatedPrompts");
         if (!rawPrompts) {
-            router.push("/projects/new");
+            router.push(
+                projectId
+                    ? `/projects/${projectId}/settings`
+                    : "/projects/new",
+            );
             return;
         }
 
@@ -51,7 +64,11 @@ export default function PromptsEditorPage() {
                 }
             });
         } catch {
-            router.push("/projects/new");
+            router.push(
+                projectId
+                    ? `/projects/${projectId}/settings`
+                    : "/projects/new",
+            );
         }
     }, [router]);
 
@@ -72,19 +89,45 @@ export default function PromptsEditorPage() {
         try {
             setSaving(true);
             setError(null);
-
-            const response = await fetch("/api/create_project", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    projectData: JSON.parse(rawProject),
-                    prompts: prompts.map(({ text, category, isCustom }) => ({
-                        text,
-                        category,
-                        is_custom: Boolean(isCustom),
-                    })),
+            const projectData = JSON.parse(rawProject);
+            const promptsPayload = prompts.map(
+                ({ text, category, isCustom }) => ({
+                    text,
+                    category,
+                    is_custom: Boolean(isCustom),
                 }),
-            });
+            );
+
+            const response = await fetch(
+                existingProjectId
+                    ? `/api/projects/${existingProjectId}/settings`
+                    : "/api/create_project",
+                {
+                    method: existingProjectId ? "PUT" : "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(
+                        existingProjectId
+                            ? {
+                                  projectData: {
+                                      brandName: projectData.brandName,
+                                      domain: projectData.domain,
+                                      niche: projectData.niche,
+                                      country: projectData.country,
+                                      city: projectData.city,
+                                      description: projectData.description,
+                                  },
+                                  competitors: projectData.competitors ?? [],
+                                  keywords: projectData.keywords ?? [],
+                                  pages: projectData.pages ?? [],
+                                  prompts: promptsPayload,
+                              }
+                            : {
+                                  projectData,
+                                  prompts: promptsPayload,
+                              },
+                    ),
+                },
+            );
 
             const result = await response.json();
             if (!response.ok) {
@@ -93,7 +136,11 @@ export default function PromptsEditorPage() {
 
             sessionStorage.removeItem("pendingProject");
             sessionStorage.removeItem("generatedPrompts");
-            router.push(`/projects/${result.projectId}`);
+            router.push(
+                existingProjectId
+                    ? `/projects/${existingProjectId}/settings`
+                    : `/projects/${result.projectId}`,
+            );
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Ошибка сохранения");
         } finally {
@@ -109,10 +156,10 @@ export default function PromptsEditorPage() {
 
             <div className="text-content-primary text-sm mb-8 space-y-3 leading-relaxed">
                 <p>
-                    Проверьте сгенерированные запросы, при необходимости
-                    отредактируйте их и добавьте свои. В проекте может быть не
-                    более {MAX_PROMPTS} промптов. Вы также сможете изменить их
-                    позже в настройках проекта.
+                    {existingProjectId
+                        ? "Проверьте новый список запросов и при необходимости отредактируйте его. После сохранения он заменит текущие промпты проекта."
+                        : "Проверьте сгенерированные запросы, при необходимости отредактируйте их и добавьте свои. Вы также сможете изменить их позже в настройках проекта."}{" "}
+                    В проекте может быть не более {MAX_PROMPTS} промптов.
                 </p>
                 <p className="text-content-secondary text-xs">
                     Всего промптов: {prompts.length} / {MAX_PROMPTS}
@@ -120,9 +167,9 @@ export default function PromptsEditorPage() {
             </div>
 
             {error && (
-                <div className="mb-6 p-4 bg-red-950/50 border border-red-800 text-red-200 rounded-2xl text-sm">
+                <StatusNotice variant="error" className="mb-6">
                     {error}
-                </div>
+                </StatusNotice>
             )}
 
             <PromptEditor prompts={prompts} onChange={setPrompts} />
@@ -133,7 +180,11 @@ export default function PromptsEditorPage() {
                     onClick={handleConfirm}
                     disabled={saving}
                 >
-                    {saving ? "Сохранение..." : "Завершить создание"}
+                    {saving
+                        ? "Сохранение..."
+                        : existingProjectId
+                          ? "Заменить промпты"
+                          : "Завершить создание"}
                 </AccentButton>
             </div>
         </div>

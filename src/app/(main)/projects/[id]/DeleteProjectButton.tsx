@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import StatusNotice from "@/components/ui/StatusNotice";
 
 export default function DeleteProjectButton({
     projectId,
@@ -70,12 +71,13 @@ export default function DeleteProjectButton({
                 {isDeleting ? "Удаление..." : "Удалить проект"}
             </button>
             {error && (
-                <p
-                    className="max-w-64 text-right text-xs text-red-600"
-                    role="alert"
+                <StatusNotice
+                    variant="error"
+                    compact
+                    className="max-w-64 text-xs"
                 >
                     {error}
-                </p>
+                </StatusNotice>
             )}
         </div>
     );

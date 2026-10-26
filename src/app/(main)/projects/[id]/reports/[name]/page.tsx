@@ -7,6 +7,7 @@ import PromptResults from "@/components/reports/PromptResults";
 import ReportMetrics from "@/components/reports/ReportMetrics";
 import ReportSummary from "@/components/reports/ReportSummary";
 import SourcesAnalysis from "@/components/reports/SourcesAnalysis";
+import StatusNotice from "@/components/ui/StatusNotice";
 import Tag from "@/components/ui/Tag";
 import type {
     CompetitorItem,
@@ -73,45 +74,9 @@ export default async function ReportPage({ params }: PageProps) {
     }
 
     const promptResultRows = (rawPromptResults || []) as PromptResult[];
-    const promptIds = [
-        ...new Set(
-            promptResultRows
-                .map((result) => result.prompt_id)
-                .filter((promptId): promptId is string => Boolean(promptId)),
-        ),
-    ];
-    let customByPromptId = new Map<string, boolean>();
-
-    if (promptIds.length > 0) {
-        const { data: prompts, error: promptsError } = await supabase
-            .from("prompts")
-            .select("id, is_custom")
-            .in("id", promptIds);
-
-        if (promptsError) {
-            throw new Error(
-                `Не удалось загрузить происхождение промптов: ${promptsError.message}`,
-            );
-        }
-
-        const promptOrigins = (prompts || []) as Array<{
-            id: string;
-            is_custom: boolean | null;
-        }>;
-        customByPromptId = new Map(
-            promptOrigins.map((prompt) => [
-                prompt.id,
-                prompt.is_custom === true,
-            ]),
-        );
-    }
-
-    const promptResults = promptResultRows.map((result) => ({
-        ...result,
-        is_custom: result.prompt_id
-            ? (customByPromptId.get(result.prompt_id) ?? null)
-            : null,
-    }));
+    const promptResults = promptResultRows.filter(
+        (result) => result.brand_mentioned != null,
+    );
     const promptCount =
         typeof report.prompts_total === "number" &&
         Number.isInteger(report.prompts_total) &&
@@ -254,14 +219,17 @@ export default async function ReportPage({ params }: PageProps) {
                     </div>
                 </div>
                 {report.error_message && (
-                    <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-                        <div className="font-semibold mb-1">
+                    <StatusNotice
+                        variant="error"
+                        className="border-white/25 bg-white/95"
+                    >
+                        <div className="mb-1 font-semibold">
                             Ошибка обработки
                         </div>
                         <p className="whitespace-pre-wrap break-words">
                             {report.error_message}
                         </p>
-                    </div>
+                    </StatusNotice>
                 )}
             </header>
 
@@ -273,10 +241,6 @@ export default async function ReportPage({ params }: PageProps) {
                 promptCount={promptCount}
             />
 
-            {keywordMentions.length > 0 && (
-                <KeywordMentionsChart data={keywordMentions} />
-            )}
-
             <ReportSummary
                 summary={report.ai_summary}
                 brandDirectSummary={report.brand_direct_summary}
@@ -286,6 +250,10 @@ export default async function ReportPage({ params }: PageProps) {
                         : null
                 }
             />
+
+            {keywordMentions.length > 0 && (
+                <KeywordMentionsChart data={keywordMentions} />
+            )}
 
             <CompetitorAnalysis
                 comparisons={h2hItems}
@@ -305,6 +273,8 @@ export default async function ReportPage({ params }: PageProps) {
                 results={promptResults}
                 projectName={project.name}
                 hasUnavailableOriginalData={hasUnavailableOriginalData}
+                projectDomain={project.domain}
+                trackedUrls={trackedPages.map((page) => page.url)}
             />
 
             <div className="no-print pt-2 flex justify-center">

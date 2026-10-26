@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import Report from "@/assets/report.svg?react";
 import ArrowRight from "@/assets/arrow_right.svg?react";
 import GradientButton from "@/components/ui/GradientButton";
+import DeleteReportButton from "./[name]/DeleteReportButton";
 
 const TEST_USER_ID =
     process.env.NEXT_PUBLIC_TEST_USER_ID ||
@@ -146,6 +147,13 @@ export default async function ReportsPage({ params }: PageProps) {
                                 <div className="flex items-center gap-4">
                                     {isCompleted && (
                                         <ArrowRight className="w-5 h-5 text-content-light group-hover:text-accent-2 transition-transform group-hover:translate-x-1 shrink-0" />
+                                    )}
+                                    {report.status === "failed" && (
+                                        <DeleteReportButton
+                                            projectId={projectId}
+                                            reportId={report.id}
+                                            variant="list"
+                                        />
                                     )}
                                 </div>
                             </div>

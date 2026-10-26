@@ -15,16 +15,133 @@ type PromptResultsProps = {
     results: PromptResult[];
     projectName: string;
     hasUnavailableOriginalData: boolean;
+    projectDomain?: string | null;
+    trackedUrls: string[];
 };
+
+type LinkFilter = "" | "domain" | "tracked";
+
+function resultKeywords(result: PromptResult): string[] {
+    const seen = new Set<string>();
+    return (result.mentioned_keywords || []).reduce<string[]>(
+        (keywords, keyword) => {
+            const trimmedKeyword = keyword.trim();
+            const normalizedKeyword = trimmedKeyword.toLocaleLowerCase("ru");
+            if (trimmedKeyword && !seen.has(normalizedKeyword)) {
+                seen.add(normalizedKeyword);
+                keywords.push(trimmedKeyword);
+            }
+            return keywords;
+        },
+        [],
+    );
+}
+
+function normalizeUrl(value: string): string | null {
+    try {
+        const url = new URL(value.includes("://") ? value : `https://${value}`);
+        const hostname = url.hostname
+            .toLocaleLowerCase("en-US")
+            .replace(/^www\./, "");
+        const pathname = url.pathname.replace(/\/+$/, "");
+        return `${hostname}${pathname}`;
+    } catch {
+        return null;
+    }
+}
+
+function normalizeDomain(value: string): string | null {
+    try {
+        return new URL(
+            value.includes("://") ? value : `https://${value}`,
+        ).hostname
+            .toLocaleLowerCase("en-US")
+            .replace(/^www\./, "");
+    } catch {
+        return null;
+    }
+}
+
+function urlReferencesDomain(
+    value: string,
+    projectDomain: string | null | undefined,
+): boolean {
+    const expectedDomain = projectDomain
+        ? normalizeDomain(projectDomain)
+        : null;
+    const hostname = normalizeDomain(value);
+    return Boolean(
+        expectedDomain &&
+        hostname &&
+        (hostname === expectedDomain ||
+            hostname.endsWith(`.${expectedDomain}`)),
+    );
+}
+
+function resultReferencesDomain(
+    result: PromptResult,
+    projectDomain: string | null | undefined,
+): boolean {
+    if (result.domain_mentioned === true) return true;
+    const expectedDomain = projectDomain
+        ? normalizeDomain(projectDomain)
+        : null;
+    if (!expectedDomain) return false;
+
+    const foundDomains = [
+        ...(result.extracted_domains || []),
+        ...(result.raw_citations || []),
+    ];
+    const hasMatchingHost = foundDomains.some((value) => {
+        const hostname = normalizeDomain(value);
+        return (
+            hostname === expectedDomain ||
+            Boolean(hostname?.endsWith(`.${expectedDomain}`))
+        );
+    });
+    if (hasMatchingHost) return true;
+
+    const escapedDomain = expectedDomain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(
+        `(?:^|[^a-z0-9.-])(?:[a-z0-9-]+\\.)*${escapedDomain}(?=$|[^a-z0-9.-])`,
+        "i",
+    ).test(result.raw_text || "");
+}
+
+function resultReferencesTrackedUrl(
+    result: PromptResult,
+    trackedUrls: string[],
+): boolean {
+    const configuredUrls = new Set(
+        trackedUrls
+            .map(normalizeUrl)
+            .filter((url): url is string => url !== null),
+    );
+    if (configuredUrls.size === 0) return false;
+
+    const referencedUrls = [
+        ...(result.mentioned_pages || []),
+        ...(result.raw_citations || []),
+        ...(result.extracted_domains || []),
+    ];
+    return referencedUrls.some((url) => {
+        const normalizedUrl = normalizeUrl(url);
+        return normalizedUrl !== null && configuredUrls.has(normalizedUrl);
+    });
+}
 
 export default function PromptResults({
     results,
     projectName,
     hasUnavailableOriginalData,
+    projectDomain,
+    trackedUrls,
 }: PromptResultsProps) {
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedProvider, setSelectedProvider] = useState("");
-    const [selectedOrigin, setSelectedOrigin] = useState("");
+    const [selectedLink, setSelectedLink] = useState<LinkFilter>("");
+    const [onlyBrandMentioned, setOnlyBrandMentioned] = useState(false);
+    const [onlyKeywordsMentioned, setOnlyKeywordsMentioned] = useState(false);
     const categories = [
         ...new Set(
             results
@@ -44,9 +161,13 @@ export default function PromptResults({
             (!selectedCategory ||
                 result.prompt_category === selectedCategory) &&
             (!selectedProvider || result.provider === selectedProvider) &&
-            (!selectedOrigin ||
-                (selectedOrigin === "custom" && result.is_custom === true) ||
-                (selectedOrigin === "generated" && result.is_custom === false)),
+            (!selectedLink ||
+                (selectedLink === "domain" &&
+                    resultReferencesDomain(result, projectDomain)) ||
+                (selectedLink === "tracked" &&
+                    resultReferencesTrackedUrl(result, trackedUrls))) &&
+            (!onlyBrandMentioned || result.brand_mentioned === true) &&
+            (!onlyKeywordsMentioned || resultKeywords(result).length > 0),
     );
     const resultCount =
         filteredResults.length === results.length
@@ -98,25 +219,55 @@ export default function PromptResults({
                         </select>
                     </label>
                     <label className="flex min-w-40 flex-1 flex-col gap-1.5 text-xs font-medium text-content-secondary">
-                        Происхождение
+                        Ссылки
                         <select
-                            value={selectedOrigin}
+                            value={selectedLink}
                             onChange={(event) =>
-                                setSelectedOrigin(event.target.value)
+                                setSelectedLink(
+                                    event.target.value as LinkFilter,
+                                )
                             }
                             className="rounded-xl border border-surface-3 bg-surface-2 px-3 py-2 text-sm text-content-primary"
                         >
-                            <option value="">Все промпты</option>
-                            <option value="custom">Пользовательские</option>
-                            <option value="generated">Сгенерированные</option>
+                            <option value="">Все</option>
+                            <option value="domain">Со ссылкой на домен</option>
+                            <option value="tracked">
+                                С отслеживаемыми ссылками
+                            </option>
                         </select>
                     </label>
+                    <div className="flex w-full flex-wrap gap-x-6 gap-y-2 border-t border-surface-3 pt-3">
+                        <label className="inline-flex items-center gap-2 text-sm text-content-secondary">
+                            <input
+                                type="checkbox"
+                                checked={onlyBrandMentioned}
+                                onChange={(event) =>
+                                    setOnlyBrandMentioned(event.target.checked)
+                                }
+                                className="size-4 accent-accent-2"
+                            />
+                            С упоминанием бренда
+                        </label>
+                        <label className="inline-flex items-center gap-2 text-sm text-content-secondary">
+                            <input
+                                type="checkbox"
+                                checked={onlyKeywordsMentioned}
+                                onChange={(event) =>
+                                    setOnlyKeywordsMentioned(
+                                        event.target.checked,
+                                    )
+                                }
+                                className="size-4 accent-accent-2"
+                            />
+                            С ключевыми словами
+                        </label>
+                    </div>
                 </div>
             )}
             {results.length > 0 ? (
                 filteredResults.length > 0 ? (
                     <div className="space-y-3">
-                        {filteredResults.map((result, index) => {
+                        {filteredResults.map((result) => {
                             const extractedDomains = (
                                 result.extracted_domains || []
                             ).filter((value) => value.trim());
@@ -126,6 +277,26 @@ export default function PromptResults({
                             const hasLinks =
                                 extractedDomains.length > 0 ||
                                 citations.length > 0;
+                            const mentionedTrackedUrls = new Set(
+                                [
+                                    ...(result.mentioned_pages || []),
+                                    ...(result.raw_citations || []),
+                                    ...(result.extracted_domains || []),
+                                ]
+                                    .map(normalizeUrl)
+                                    .filter(
+                                        (url): url is string =>
+                                            url !== null &&
+                                            trackedUrls.some(
+                                                (trackedUrl) =>
+                                                    normalizeUrl(trackedUrl) ===
+                                                    url,
+                                            ),
+                                    ),
+                            );
+                            const referencesProjectDomain =
+                                resultReferencesDomain(result, projectDomain);
+                            const keywords = resultKeywords(result);
                             const targetProsCons = Object.entries(
                                 result.brands_pros_cons || {},
                             ).find(
@@ -141,7 +312,6 @@ export default function PromptResults({
                                 >
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <Tag>{`Запрос ${index + 1}`}</Tag>
                                             <Tag tone="accent">
                                                 {categoryLabel(
                                                     result.prompt_category,
@@ -150,13 +320,24 @@ export default function PromptResults({
                                             {result.provider && (
                                                 <Tag>{result.provider}</Tag>
                                             )}
-                                            <Tag>
-                                                {result.is_custom == null
-                                                    ? "Происхождение не определено"
-                                                    : result.is_custom
-                                                      ? "Пользовательский"
-                                                      : "Сгенерированный"}
-                                            </Tag>
+                                            {referencesProjectDomain && (
+                                                <Tag tone="accent">
+                                                    Ссылается на домен
+                                                </Tag>
+                                            )}
+                                            {mentionedTrackedUrls.size > 0 && (
+                                                <Tag tone="accent">
+                                                    Отслеживаемые ссылки
+                                                </Tag>
+                                            )}
+                                            {keywords.map((keyword) => (
+                                                <Tag
+                                                    key={keyword}
+                                                    tone="accent"
+                                                >
+                                                    {keyword}
+                                                </Tag>
+                                            ))}
                                         </div>
                                         <div className="text-xs text-content-light break-all">
                                             ID: {result.id}
@@ -283,6 +464,36 @@ export default function PromptResults({
                                                                         externalHref(
                                                                             domain,
                                                                         );
+                                                                    const isTracked =
+                                                                        (href &&
+                                                                            trackedUrls.some(
+                                                                                (
+                                                                                    url,
+                                                                                ) =>
+                                                                                    normalizeUrl(
+                                                                                        url,
+                                                                                    ) ===
+                                                                                    normalizeUrl(
+                                                                                        href,
+                                                                                    ),
+                                                                            )) ||
+                                                                        mentionedTrackedUrls.has(
+                                                                            normalizeUrl(
+                                                                                domain,
+                                                                            ) ??
+                                                                                "",
+                                                                        );
+                                                                    const isProjectDomain =
+                                                                        urlReferencesDomain(
+                                                                            domain,
+                                                                            projectDomain,
+                                                                        );
+                                                                    const linkClassName =
+                                                                        isTracked
+                                                                            ? "border border-accent-2/40 bg-accent-2/10 font-semibold text-accent-2"
+                                                                            : isProjectDomain
+                                                                              ? "bg-accent-2/10 font-medium text-accent-2"
+                                                                              : "bg-surface-1 text-accent-2 hover:bg-surface-1";
                                                                     return href ? (
                                                                         <a
                                                                             key={`${domain}-${index}`}
@@ -291,7 +502,7 @@ export default function PromptResults({
                                                                             }
                                                                             target="_blank"
                                                                             rel="noreferrer"
-                                                                            className="rounded-full bg-surface-1 px-3 py-1.5 text-xs text-accent-2 hover:bg-surface-3 break-all"
+                                                                            className={`break-all rounded-full px-3 py-1.5 text-xs ${linkClassName}`}
                                                                         >
                                                                             {
                                                                                 domain
@@ -327,10 +538,40 @@ export default function PromptResults({
                                                                         externalHref(
                                                                             citation,
                                                                         );
+                                                                    const isTracked =
+                                                                        (href &&
+                                                                            trackedUrls.some(
+                                                                                (
+                                                                                    url,
+                                                                                ) =>
+                                                                                    normalizeUrl(
+                                                                                        url,
+                                                                                    ) ===
+                                                                                    normalizeUrl(
+                                                                                        href,
+                                                                                    ),
+                                                                            )) ||
+                                                                        mentionedTrackedUrls.has(
+                                                                            normalizeUrl(
+                                                                                citation,
+                                                                            ) ??
+                                                                                "",
+                                                                        );
+                                                                    const isProjectDomain =
+                                                                        urlReferencesDomain(
+                                                                            citation,
+                                                                            projectDomain,
+                                                                        );
+                                                                    const citationClassName =
+                                                                        isTracked
+                                                                            ? "border border-accent-2/40 bg-accent-2/10"
+                                                                            : isProjectDomain
+                                                                              ? "bg-accent-2/10"
+                                                                              : "bg-surface-1";
                                                                     return (
                                                                         <li
                                                                             key={`${citation}-${index}`}
-                                                                            className="rounded-xl bg-surface-1 px-3 py-2 text-xs break-all"
+                                                                            className={`rounded-xl px-3 py-2 text-xs break-all ${citationClassName}`}
                                                                         >
                                                                             {href ? (
                                                                                 <a
