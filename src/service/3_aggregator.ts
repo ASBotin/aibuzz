@@ -393,21 +393,6 @@ export function calculateH2HMetrics(data: PromptResultData[], context: ProjectCo
         };
     });
 
-    h2h_matrix.sort((a, b) => {
-        if (a.average_rank !== null && b.average_rank !== null) {
-            return a.average_rank - b.average_rank;
-        }
-        if (a.average_rank !== null && b.average_rank === null) {
-            return -1;
-        }
-        if (a.average_rank === null && b.average_rank !== null) {
-            return 1;
-        }
-        if (a.is_target && !b.is_target) return -1;
-        if (!a.is_target && b.is_target) return 1;
-        return 0;
-    });
-
     return { h2h_matrix };
 }
 

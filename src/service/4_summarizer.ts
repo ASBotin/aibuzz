@@ -9,6 +9,14 @@ export interface H2HMatrixItem {
     cons: string[];
 }
 
+export interface RankedH2HMatrixItem {
+    brand: string;
+    is_target: boolean;
+    rank: number;
+    pros: string[];
+    cons: string[];
+}
+
 export interface SummarizerInput {
     targetBrand: string;
     shareOfVoice: number;
@@ -23,54 +31,64 @@ export interface SummarizerInput {
 export interface SummarizerOutput {
     ai_summary: string;
     brand_direct_summary: string | null;
-    h2h_matrix: H2HMatrixItem[];
+    h2h_matrix: RankedH2HMatrixItem[];
     h2h_summary: string | null;
 }
 
-function cleanList(value: unknown, fallback: string[]): string[] {
-    if (!Array.isArray(value)) return fallback;
-
-    return [...new Set(
-        value
-            .filter((item): item is string => typeof item === 'string')
-            .map(item => item.trim())
-            .filter(Boolean)
-    )].slice(0, 3);
-}
-
-function buildH2HMatrix(value: unknown, original: H2HMatrixItem[]): H2HMatrixItem[] {
-    if (!Array.isArray(value) || original.length === 0) return original;
+function buildH2HMatrix(
+    value: unknown,
+    original: H2HMatrixItem[],
+): RankedH2HMatrixItem[] {
+    if (original.length === 0) return [];
 
     const originalByName = new Map(
-        original.map(item => [normalizeBrandName(item.brand), item])
+        original.map((item) => [normalizeBrandName(item.brand), item]),
     );
-    const seen = new Set<string>();
-    const result: H2HMatrixItem[] = [];
+    const rankedNames: Array<{ name: string; rank: number; order: number }> = [];
 
-    for (const item of value) {
-        if (!item || typeof item.brand !== 'string') continue;
+    if (Array.isArray(value)) {
+        value.forEach((item, order) => {
+            if (
+                !item ||
+                typeof item !== 'object' ||
+                !('brand' in item) ||
+                typeof item.brand !== 'string' ||
+                !('rank' in item) ||
+                typeof item.rank !== 'number' ||
+                !Number.isInteger(item.rank) ||
+                item.rank < 1
+            ) {
+                return;
+            }
 
-        const normalizedName = normalizeBrandName(item.brand);
-        const source = originalByName.get(normalizedName);
-        if (!source || seen.has(normalizedName)) continue;
-
-        seen.add(normalizedName);
-        result.push({
-            // Keep names and numeric metrics from the aggregator; the model only edits interpretation.
-            brand: source.brand,
-            is_target: source.is_target,
-            average_rank: source.average_rank,
-            pros: cleanList(item.pros, source.pros),
-            cons: cleanList(item.cons, source.cons),
+            const name = normalizeBrandName(item.brand);
+            if (!originalByName.has(name)) return;
+            rankedNames.push({ name, rank: item.rank, order });
         });
     }
 
-    // Do not lose a brand if the model accidentally omits it from the response.
-    for (const item of original) {
-        if (!seen.has(normalizeBrandName(item.brand))) result.push(item);
-    }
+    rankedNames.sort((left, right) => left.rank - right.rank || left.order - right.order);
+    const orderedNames = [
+        ...new Set(rankedNames.map(({ name }) => name)),
+        ...original
+            .map((item) => normalizeBrandName(item.brand))
+            .filter((name) => !rankedNames.some((item) => item.name === name)),
+    ];
 
-    return result;
+    return orderedNames.flatMap((name, index) => {
+        const source = originalByName.get(name);
+        if (!source) return [];
+
+        return [
+            {
+                brand: source.brand,
+                is_target: source.is_target,
+                rank: index + 1,
+                pros: source.pros,
+                cons: source.cons,
+            },
+        ];
+    });
 }
 
 export async function generateReportSummary(input: SummarizerInput): Promise<SummarizerOutput> {
@@ -81,14 +99,14 @@ export async function generateReportSummary(input: SummarizerInput): Promise<Sum
 Задачи:
 1. ai_summary — общее резюме отчёта в 3–4 абзацах: позиции целевого бренда, сильные и слабые стороны, конкуренты, источники и конкретные рекомендации. Используйте также выводы H2H, не придумывайте факты.
 2. brand_direct_summary — краткая трактовка прямого анализа бренда. Верните null, если данные прямого анализа отсутствуют.
-3. h2h_matrix — итоговый рейтинг всех брендов из входной H2H-матрицы. Это одновременно данные для итогового топа: упорядочьте бренды с учётом среднего ранга (меньше — лучше) и содержательных плюсов/минусов. Числовые данные — основа рейтинга; качественные отличия помогают интерпретировать и сравнивать бренды, особенно при близких или отсутствующих рангах. Не придумывайте значения ранга и не исключайте бренды. Для каждого бренда оставьте только значимые для конкурентного сравнения плюсы и минусы, объедините дублирующиеся или близкие по смыслу пункты в короткие формулировки. Не более 3 пунктов в каждом списке. Не добавляйте плюсы/минусы, которых нет во входных данных. Сохраните точные brand, is_target и average_rank из исходной матрицы.
-4. h2h_summary — итог по сравнению брендов в 2–4 предложениях: положение целевого бренда, кто выглядит сильнее/слабее и за счёт каких подтверждённых отличий. Если H2H-матрица пуста, верните null.
+3. h2h_matrix — итоговый топ всех брендов из входной H2H-матрицы. Самостоятельно оцените совокупность данных по каждому бренду: средние ранги из исходных ответов, подтверждённые плюсы и минусы. Не сортируйте бренды механически по среднему рангу: итоговый порядок должен учитывать весь контекст и конкурентные преимущества. Присвойте каждому бренду уникальный целочисленный rank от 1 (лучший) до количества брендов. Не пропускайте и не дублируйте бренды. Не включайте average_rank в результат. Поля pros и cons должны содержать исходные списки без изменений; не сокращайте и не придумывайте пункты.
+4. h2h_summary — итог по сравнению брендов в 2–4 предложениях: положение целевого бренда согласно итоговому рангу, кто выглядит сильнее/слабее и за счёт каких подтверждённых отличий. Если H2H-матрица пуста, верните null.
 
 Верните только корректный JSON с ключами:
 {
   "ai_summary": "...",
   "brand_direct_summary": "..." или null,
-  "h2h_matrix": [{ "brand": "...", "is_target": true, "average_rank": 1.2, "pros": ["..."], "cons": ["..."] }],
+  "h2h_matrix": [{ "brand": "...", "rank": 1, "pros": ["..."], "cons": ["..."] }],
   "h2h_summary": "..." или null
 }
 `;
@@ -117,7 +135,10 @@ export async function generateReportSummary(input: SummarizerInput): Promise<Sum
 
         const content = response.choices[0]?.message?.content || '{}';
         const parsed = JSON.parse(content);
-        const h2hMatrix = buildH2HMatrix(parsed.h2h_matrix, input.h2hMatrix);
+        const h2hMatrix = buildH2HMatrix(
+            parsed.h2h_matrix,
+            input.h2hMatrix,
+        );
 
         return {
             ai_summary: typeof parsed.ai_summary === 'string' && parsed.ai_summary.trim()

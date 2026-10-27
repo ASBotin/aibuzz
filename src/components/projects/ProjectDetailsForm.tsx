@@ -254,69 +254,6 @@ export default function ProjectDetailsForm({
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                    <FieldLabel
-                        htmlFor="pages-input-0"
-                        hint="Добавьте до 5 важных страниц сайта, чтобы отдельно отслеживать их упоминания и ссылки."
-                    >
-                        Ссылки
-                    </FieldLabel>
-                    <span className="text-xs text-content-light tabular-nums">
-                        {pages.filter((page) => page.trim()).length} /{" "}
-                        {MAX_PAGES}
-                    </span>
-                </div>
-                <div className="space-y-2">
-                    {(pages.length > 0 ? pages : [""]).map((page, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                            <input
-                                id={`pages-input-${index}`}
-                                type="url"
-                                value={page}
-                                onChange={(event) =>
-                                    updatePage(index, event.target.value)
-                                }
-                                placeholder="https://example.ru/page"
-                                aria-label={`Ссылка ${index + 1}`}
-                                className={inputClassName}
-                            />
-                            {index > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        onPagesChange(
-                                            pages.filter(
-                                                (_, pageIndex) =>
-                                                    pageIndex !== index,
-                                            ),
-                                        )
-                                    }
-                                    aria-label={`Удалить ссылку ${index + 1}`}
-                                    className="shrink-0 rounded-full p-2 text-content-light hover:bg-surface-1 hover:text-content-primary"
-                                >
-                                    <X size={18} aria-hidden="true" />
-                                </button>
-                            )}
-                            {index === pages.length - 1 &&
-                                page.trim() &&
-                                pages.length < MAX_PAGES && (
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            onPagesChange([...pages, ""])
-                                        }
-                                        aria-label="Добавить ссылку"
-                                        className="shrink-0 rounded-full p-2 text-accent-2 transition-colors hover:bg-surface-1"
-                                    >
-                                        <Plus size={18} aria-hidden="true" />
-                                    </button>
-                                )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
             <TagInput
                 id="competitor-input"
                 label="Конкуренты"
@@ -395,6 +332,68 @@ export default function ProjectDetailsForm({
                     rows={4}
                     className="w-full bg-surface-2 border border-content-light rounded-2xl px-4 py-3 text-content-primary focus:outline-none focus:border-accent-2 focus:ring-1 focus:ring-accent-2 transition-colors resize-none h-48"
                 />
+            </div>
+            <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                    <FieldLabel
+                        htmlFor="pages-input-0"
+                        hint="Добавьте до 5 важных страниц сайта, чтобы отдельно отслеживать их упоминания и ссылки."
+                    >
+                        Ссылки
+                    </FieldLabel>
+                    <span className="text-xs text-content-light tabular-nums">
+                        {pages.filter((page) => page.trim()).length} /{" "}
+                        {MAX_PAGES}
+                    </span>
+                </div>
+                <div className="space-y-2">
+                    {(pages.length > 0 ? pages : [""]).map((page, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            <input
+                                id={`pages-input-${index}`}
+                                type="url"
+                                value={page}
+                                onChange={(event) =>
+                                    updatePage(index, event.target.value)
+                                }
+                                placeholder="https://example.ru/page"
+                                aria-label={`Ссылка ${index + 1}`}
+                                className={inputClassName}
+                            />
+                            {index > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        onPagesChange(
+                                            pages.filter(
+                                                (_, pageIndex) =>
+                                                    pageIndex !== index,
+                                            ),
+                                        )
+                                    }
+                                    aria-label={`Удалить ссылку ${index + 1}`}
+                                    className="shrink-0 rounded-full p-2 text-content-light hover:bg-surface-1 hover:text-content-primary"
+                                >
+                                    <X size={18} aria-hidden="true" />
+                                </button>
+                            )}
+                            {index === pages.length - 1 &&
+                                page.trim() &&
+                                pages.length < MAX_PAGES && (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            onPagesChange([...pages, ""])
+                                        }
+                                        aria-label="Добавить ссылку"
+                                        className="shrink-0 rounded-full p-2 text-accent-2 transition-colors hover:bg-surface-1"
+                                    >
+                                        <Plus size={18} aria-hidden="true" />
+                                    </button>
+                                )}
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

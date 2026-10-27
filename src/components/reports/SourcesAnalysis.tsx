@@ -34,6 +34,28 @@ export default function SourcesAnalysis({
     trackedPages,
 }: SourcesAnalysisProps) {
     const normalizedProjectDomain = normalizeDomain(projectDomain);
+    const displayedSources =
+        projectDomain?.trim() &&
+        !sources.some((source) => {
+            if (normalizedProjectDomain) {
+                return normalizeDomain(source.domain) === normalizedProjectDomain;
+            }
+
+            return (
+                source.domain.trim().toLocaleLowerCase("en-US") ===
+                projectDomain.trim().toLocaleLowerCase("en-US")
+            );
+        })
+            ? [
+                  ...sources,
+                  {
+                      domain: normalizedProjectDomain ?? projectDomain.trim(),
+                      count: 0,
+                      percentage: 0,
+                      mentions_target_brand: false,
+                  },
+              ]
+            : sources;
 
     return (
         <section className="space-y-4">
@@ -68,9 +90,9 @@ export default function SourcesAnalysis({
                 </div>
             </div>
 
-            {sources.length > 0 ? (
+            {displayedSources.length > 0 ? (
                 <div className="space-y-2">
-                    {sources.map((source, index) => {
+                    {displayedSources.map((source, index) => {
                         const href = externalHref(source.domain);
                         const isProjectDomain =
                             normalizedProjectDomain !== null &&

@@ -46,7 +46,7 @@ export default async function ReportPage({ params }: PageProps) {
 
     const { data: project, error: projectError } = await supabase
         .from("projects")
-        .select("id, name, niche, domain")
+        .select("id, name, niche, domain, competitors")
         .eq("id", projectId)
         .eq("user_id", TEST_USER_ID)
         .single();
@@ -144,6 +144,12 @@ export default async function ReportPage({ params }: PageProps) {
         const bIsOther = b.name.trim().toLocaleLowerCase("ru-RU") === "other";
         return Number(aIsOther) - Number(bIsOther);
     });
+    const configuredCompetitors = Array.isArray(project.competitors)
+        ? project.competitors.filter(
+              (competitor): competitor is string =>
+                  typeof competitor === "string",
+          )
+        : [];
     const hasUnavailableOriginalData = promptResults.some((result) => {
         const hasPromptText = Boolean(result.prompt_text?.trim());
         const hasLinks = Boolean(
@@ -251,15 +257,16 @@ export default async function ReportPage({ params }: PageProps) {
                 }
             />
 
-            {keywordMentions.length > 0 && (
-                <KeywordMentionsChart data={keywordMentions} />
-            )}
-
             <CompetitorAnalysis
                 comparisons={h2hItems}
                 competitors={sortedCompetitorItems}
                 projectName={project.name}
+                configuredCompetitors={configuredCompetitors}
             />
+
+            {keywordMentions.length > 0 && (
+                <KeywordMentionsChart data={keywordMentions} />
+            )}
 
             <SourcesAnalysis
                 citationRate={report.citation_rate}

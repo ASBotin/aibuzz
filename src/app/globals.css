@@ -6,6 +6,7 @@
   --color-surface-1: #e7e6eb;
   --color-surface-2: #ffffff;
   --color-surface-3: #d5d4d9;
+  --color-surface-4: #dfdee3;
 
   --color-content-primary: #121214;
   --color-content-secondary: #717175;
@@ -72,6 +73,10 @@
 
   .report-print-root .bg-surface-3 {
     background-color: #d5d4d9 !important;
+  }
+
+  .report-print-root .bg-surface-4 {
+    background-color: #d4d3d9 !important;
   }
 
   .report-print-root .text-content-primary {

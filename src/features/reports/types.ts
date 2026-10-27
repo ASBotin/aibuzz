@@ -1,7 +1,7 @@
 export type H2HItem = {
     brand: string;
     is_target: boolean;
-    average_rank: number | null;
+    rank?: number;
     pros?: string[];
     cons?: string[];
 };
