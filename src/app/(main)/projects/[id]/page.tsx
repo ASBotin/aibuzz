@@ -34,8 +34,8 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
     }
 
     return (
-        <div className="max-w-5xl mx-auto py-12 px-4">
-            <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+            <div className="mb-6 flex items-center justify-between gap-4">
                 <Link
                     href="/projects"
                     className="text-sm text-content-secondary hover:text-content-primary inline-flex items-center gap-1.5"
@@ -45,9 +45,9 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                 <DeleteProjectButton projectId={id} />
             </div>
 
-            <div className="bg-surface-1 rounded-3xl p-8 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 select-none">
+            <div className="mb-6 flex flex-col items-start justify-between gap-6 rounded-3xl bg-surface-1 p-6 sm:p-8 lg:flex-row lg:items-center">
                 <div className="space-y-2">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <h1 className="text-3xl font-bold text-content-primary uppercase tracking-wide">
                             {project.name}
                         </h1>
@@ -67,16 +67,16 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                 <GradientButton
                     size="md"
                     href={`/projects/${project.id}/run-audit`}
-                    className="py-4 whitespace-nowrap"
+                    className="shrink-0 py-4 whitespace-nowrap"
                 >
                     Начать исследование
                 </GradientButton>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Link
                     href={`/projects/${project.id}/reports`}
-                    className="bg-surface-1  rounded-3xl p-6 transition-all hover:bg-surface-3 group flex items-center justify-between"
+                    className="group flex items-center justify-between rounded-3xl bg-surface-1 p-6 transition-all hover:bg-surface-3 sm:p-7"
                 >
                     <div>
                         <h2 className="text-lg font-semibold text-content-primary">
@@ -91,7 +91,7 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
 
                 <Link
                     href={`/projects/${project.id}/settings`}
-                    className="bg-surface-1  rounded-3xl p-6 transition-all hover:bg-surface-3 group flex items-center justify-between"
+                    className="group flex items-center justify-between rounded-3xl bg-surface-1 p-6 transition-all hover:bg-surface-3 sm:p-7"
                 >
                     <div>
                         <h2 className="text-lg font-semibold text-content-primary">
@@ -104,7 +104,7 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                     <ArrowRight className="w-5 h-5 text-content-light group-hover:text-accent-2 transition-transform group-hover:translate-x-1 shrink-0" />
                 </Link>
             </div>
-            <Dashboard projectId={project.id} className="mb-4 mt-4" />
+            <Dashboard projectId={project.id} className="mt-6" />
         </div>
     );
 }

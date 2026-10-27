@@ -7,6 +7,7 @@ import {
     ResponsiveContainer,
     Tooltip,
 } from "recharts";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { formatNumber } from "@/features/reports/utils";
 
 export type PieColor =
@@ -79,10 +80,16 @@ export function PieMetricCard({
     title,
     ariaLabel,
     slices,
+    primaryValue,
+    changeFromPrevious,
+    hasPreviousReport,
 }: {
     title: string;
     ariaLabel: string;
     slices: PieSlice[];
+    primaryValue: number | null;
+    changeFromPrevious: number | null;
+    hasPreviousReport: boolean;
 }) {
     const values = slices.map((slice) =>
         typeof slice.value === "number" && Number.isFinite(slice.value)
@@ -106,55 +113,101 @@ export function PieMetricCard({
             <h3 className="mb-5 text-sm font-semibold text-content-primary">
                 {title}
             </h3>
-            <div className="flex flex-1 flex-col items-center justify-center gap-5 sm:flex-row">
-                <div
-                    className="h-32 w-32 shrink-0"
-                    role="img"
-                    aria-label={ariaLabel}
-                >
-                    {chartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={chartData}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius="88%"
-                                    startAngle={-90}
-                                    endAngle={270}
-                                    paddingAngle={chartData.length > 1 ? 1 : 0}
-                                    stroke="var(--color-surface-2)"
-                                    strokeWidth={1.5}
-                                    isAnimationActive={false}
-                                >
-                                    {chartData.map((slice) => (
-                                        <Cell
-                                            key={slice.name}
-                                            fill={slice.color}
-                                        />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    content={<PieTooltip />}
-                                    isAnimationActive={false}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    ) : (
+            <div className="flex flex-1 flex-col gap-4">
+                <div className="flex min-w-0 items-center justify-between gap-2">
+                    <div className="min-w-0">
+                        <div className="whitespace-nowrap text-3xl font-semibold tracking-tight text-content-primary tabular-nums sm:text-4xl">
+                            {primaryValue == null
+                                ? "—"
+                                : formatPercent(primaryValue)}
+                        </div>
                         <div
-                            className="h-full w-full rounded-full bg-surface-3"
-                            aria-hidden="true"
-                        />
-                    )}
+                            className={`mt-1 flex items-center gap-1 text-xs ${
+                                changeFromPrevious == null
+                                    ? "text-content-secondary"
+                                    : changeFromPrevious > 0
+                                      ? "text-emerald-700"
+                                      : changeFromPrevious < 0
+                                        ? "text-red-700"
+                                        : "text-content-secondary"
+                            }`}
+                            aria-live="polite"
+                        >
+                            {changeFromPrevious != null ? (
+                                changeFromPrevious > 0 ? (
+                                    <TrendingUp
+                                        size={14}
+                                        aria-hidden="true"
+                                    />
+                                ) : changeFromPrevious < 0 ? (
+                                    <TrendingDown
+                                        size={14}
+                                        aria-hidden="true"
+                                    />
+                                ) : (
+                                    <Minus size={14} aria-hidden="true" />
+                                )
+                            ) : null}
+                            <span>
+                                {changeFromPrevious == null
+                                    ? hasPreviousReport
+                                        ? "Нет данных для сравнения"
+                                        : "Нет прошлого отчёта"
+                                    : `${changeFromPrevious > 0 ? "+" : ""}${formatNumber(changeFromPrevious)} п.п. к прошлому отчёту`}
+                            </span>
+                        </div>
+                    </div>
+                    <div
+                        className="h-24 w-24 shrink-0 sm:h-28 sm:w-28"
+                        role="img"
+                        aria-label={ariaLabel}
+                    >
+                        {chartData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={chartData}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius="88%"
+                                        startAngle={-90}
+                                        endAngle={270}
+                                        paddingAngle={
+                                            chartData.length > 1 ? 1 : 0
+                                        }
+                                        stroke="var(--color-surface-2)"
+                                        strokeWidth={1.5}
+                                        isAnimationActive={false}
+                                    >
+                                        {chartData.map((slice) => (
+                                            <Cell
+                                                key={slice.name}
+                                                fill={slice.color}
+                                            />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        content={<PieTooltip />}
+                                        isAnimationActive={false}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div
+                                className="h-full w-full rounded-full bg-surface-3"
+                                aria-hidden="true"
+                            />
+                        )}
+                    </div>
                 </div>
 
-                <ul className="w-full min-w-0 space-y-3">
+                <ul className="w-full min-w-0 space-y-2 border-t border-surface-3 pt-3">
                     {slices.map((slice) => (
                         <li
                             key={slice.label}
-                            className="flex items-center justify-between gap-3 text-sm"
+                            className="flex items-center justify-between gap-2 text-xs"
                         >
                             <span className="flex min-w-0 items-center gap-2 text-content-secondary">
                                 <span

@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import CompetitorAnalysis from "@/components/reports/CompetitorAnalysis";
 import KeywordMentionsChart from "@/components/reports/KeywordMentionsChart";
 import PromptResults from "@/components/reports/PromptResults";
+import ReportTabs from "@/components/reports/ReportTabs";
 import ReportMetrics from "@/components/reports/ReportMetrics";
 import ReportSummary from "@/components/reports/ReportSummary";
 import SourcesAnalysis from "@/components/reports/SourcesAnalysis";
@@ -61,6 +62,22 @@ export default async function ReportPage({ params }: PageProps) {
         .single();
 
     if (reportError || !report) notFound();
+
+    const { data: previousReport, error: previousReportError } = await supabase
+        .from("reports")
+        .select("share_of_voice, sentiment_index")
+        .eq("project_id", projectId)
+        .eq("status", "completed")
+        .lt("created_at", report.created_at)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (previousReportError) {
+        throw new Error(
+            `Не удалось загрузить предыдущий отчёт: ${previousReportError.message}`,
+        );
+    }
 
     const { data: rawPromptResults, error: promptResultsError } = await supabase
         .from("prompt_results")
@@ -123,6 +140,14 @@ export default async function ReportPage({ params }: PageProps) {
                   Number.isFinite(page.count),
           )
         : [];
+    const domainCitationCount = trackedSources?.domain?.count;
+    const domainCitationRate =
+        typeof domainCitationCount === "number" &&
+        Number.isFinite(domainCitationCount) &&
+        domainCitationCount >= 0 &&
+        promptCount > 0
+            ? Math.min(100, (domainCitationCount / promptCount) * 100)
+            : null;
     const originalLinksByDomain = promptResults.reduce<
         Record<string, string[]>
     >((linksByDomain, result) => {
@@ -171,6 +196,27 @@ export default async function ReportPage({ params }: PageProps) {
         shareOfVoiceRaw == null
             ? null
             : Math.min(100, Math.max(0, shareOfVoiceRaw));
+    const previousShareOfVoice =
+        typeof previousReport?.share_of_voice === "number" &&
+        Number.isFinite(previousReport.share_of_voice)
+            ? Math.min(100, Math.max(0, previousReport.share_of_voice))
+            : null;
+    const previousSentiment =
+        previousReport?.sentiment_index &&
+        typeof previousReport.sentiment_index === "object" &&
+        !Array.isArray(previousReport.sentiment_index)
+            ? (previousReport.sentiment_index as SentimentIndex)
+            : null;
+    const previousPositiveSentiment =
+        typeof previousSentiment?.positive === "number" &&
+        Number.isFinite(previousSentiment.positive)
+            ? Math.min(100, Math.max(0, previousSentiment.positive))
+            : null;
+    const currentPositiveSentiment =
+        typeof sentiment?.positive === "number" &&
+        Number.isFinite(sentiment.positive)
+            ? Math.min(100, Math.max(0, sentiment.positive))
+            : null;
 
     const statusTone =
         report.status === "completed"
@@ -180,7 +226,7 @@ export default async function ReportPage({ params }: PageProps) {
               : "warning";
 
     return (
-        <main className="report-print-root max-w-5xl mx-auto py-8 md:py-12 px-4 space-y-8">
+        <main className="report-print-root w-full space-y-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
             <div className="no-print flex flex-wrap items-center justify-between gap-3">
                 <Link
                     href={`/projects/${projectId}/reports`}
@@ -196,7 +242,7 @@ export default async function ReportPage({ params }: PageProps) {
                 </Link>
             </div>
 
-            <header className="rounded-3xl bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 text-white p-6 md:p-8 space-y-5">
+            <header className="space-y-5 rounded-3xl bg-linear-to-r from-accent-1 via-accent-2 to-accent-3 p-6 text-white shadow-sm md:p-8">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-2 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -239,49 +285,106 @@ export default async function ReportPage({ params }: PageProps) {
                 )}
             </header>
 
-            <ReportMetrics
-                projectName={project.name}
-                shareOfVoice={shareOfVoice}
-                sentiment={sentiment}
-                averageRank={report.average_rank}
-                promptCount={promptCount}
-            />
-
-            <ReportSummary
-                summary={report.ai_summary}
-                brandDirectSummary={report.brand_direct_summary}
-                headToHeadSummary={
-                    typeof report.h2h_summary === "string"
-                        ? report.h2h_summary
-                        : null
-                }
-            />
-
-            <CompetitorAnalysis
-                comparisons={h2hItems}
-                competitors={sortedCompetitorItems}
-                projectName={project.name}
-                configuredCompetitors={configuredCompetitors}
-            />
-
-            {keywordMentions.length > 0 && (
-                <KeywordMentionsChart data={keywordMentions} />
-            )}
-
-            <SourcesAnalysis
-                citationRate={report.citation_rate}
-                sources={topSources}
-                originalLinksByDomain={originalLinksByDomain}
-                projectDomain={project.domain}
-                trackedPages={trackedPages}
-            />
-
-            <PromptResults
-                results={promptResults}
-                projectName={project.name}
-                hasUnavailableOriginalData={hasUnavailableOriginalData}
-                projectDomain={project.domain}
-                trackedUrls={trackedPages.map((page) => page.url)}
+            <ReportTabs
+                sections={[
+                    {
+                        id: "overview",
+                        label: "Обзор",
+                        content: (
+                            <>
+                                <ReportMetrics
+                                    projectName={project.name}
+                                    shareOfVoice={shareOfVoice}
+                                    sentiment={sentiment}
+                                    averageRank={report.average_rank}
+                                    promptCount={promptCount}
+                                    shareOfVoiceChange={
+                                        shareOfVoice != null &&
+                                        previousShareOfVoice != null
+                                            ? shareOfVoice -
+                                              previousShareOfVoice
+                                            : null
+                                    }
+                                    positiveSentimentChange={
+                                        currentPositiveSentiment != null &&
+                                        previousPositiveSentiment != null
+                                            ? currentPositiveSentiment -
+                                              previousPositiveSentiment
+                                            : null
+                                    }
+                                    hasPreviousReport={previousReport != null}
+                                    domainCitationRate={domainCitationRate}
+                                />
+                                <ReportSummary
+                                    summary={report.ai_summary}
+                                    brandDirectSummary={
+                                        report.brand_direct_summary
+                                    }
+                                    headToHeadSummary={
+                                        typeof report.h2h_summary === "string"
+                                            ? report.h2h_summary
+                                            : null
+                                    }
+                                />
+                            </>
+                        ),
+                    },
+                    {
+                        id: "competitors",
+                        label: "Конкуренты",
+                        content: (
+                            <CompetitorAnalysis
+                                comparisons={h2hItems}
+                                competitors={sortedCompetitorItems}
+                                projectName={project.name}
+                                configuredCompetitors={configuredCompetitors}
+                            />
+                        ),
+                    },
+                    ...(keywordMentions.length > 0
+                        ? [
+                              {
+                                  id: "keywords",
+                                  label: "Ключевые слова",
+                                  content: (
+                                      <KeywordMentionsChart
+                                          data={keywordMentions}
+                                      />
+                                  ),
+                              },
+                          ]
+                        : []),
+                    {
+                        id: "sources",
+                        label: "Источники",
+                        content: (
+                            <SourcesAnalysis
+                                citationRate={report.citation_rate}
+                                sources={topSources}
+                                originalLinksByDomain={originalLinksByDomain}
+                                projectDomain={project.domain}
+                                trackedPages={trackedPages}
+                            />
+                        ),
+                    },
+                    {
+                        id: "answers",
+                        label: "Ответы",
+                        content: (
+                            <PromptResults
+                                results={promptResults}
+                                projectName={project.name}
+                                hasUnavailableOriginalData={
+                                    hasUnavailableOriginalData
+                                }
+                                projectDomain={project.domain}
+                                trackedUrls={trackedPages.map(
+                                    (page) => page.url,
+                                )}
+                            />
+                        ),
+                    },
+                ]}
             />
 
             <div className="no-print pt-2 flex justify-center">

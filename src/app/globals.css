@@ -19,12 +19,38 @@
   --color-accent-2-hover: #2e7ea5;
 }
 
+:root {
+  --sidebar-width: 15rem;
+}
+
+.app-sidebar {
+  width: var(--sidebar-width);
+}
+
+@media (max-width: 639px) {
+  :root {
+    --sidebar-width: 4rem;
+  }
+
+  .app-sidebar-label {
+    display: none;
+  }
+}
+
 @page report {
   size: A4;
   margin: 12mm;
 }
 
 @media print {
+  .app-sidebar {
+    display: none !important;
+  }
+
+  .app-shell-content {
+    width: 100% !important;
+  }
+
   body:has(main.report-print-root) {
     background: #fff !important;
     color: #121214 !important;
@@ -38,6 +64,15 @@
 
   .report-print-root .no-print {
     display: none !important;
+  }
+
+  .report-print-root .report-section-panel {
+    display: block !important;
+    break-before: page;
+  }
+
+  .report-print-root .report-section-panel:nth-of-type(2) {
+    break-before: auto;
   }
 
   main.report-print-root {

@@ -1,5 +1,5 @@
 import type { ShareOfVoiceDistributionItem } from "./dashboard";
-import { PieMetricCard } from "@/components/charts/PieMetricCard";
+import DashboardPieMetricCard from "@/components/charts/DashboardPieMetricCard";
 
 export default function SovPie({
     data,
@@ -10,7 +10,7 @@ export default function SovPie({
     const shareOfVoice = targetBrand?.value ?? null;
 
     return (
-        <PieMetricCard
+        <DashboardPieMetricCard
             title="Доля упоминаний (SoV) за выбранный период"
             ariaLabel="Круговая диаграмма доли упоминаний целевого бренда за выбранный период"
             slices={[

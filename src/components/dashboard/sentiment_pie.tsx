@@ -1,5 +1,5 @@
 import type { SentimentDistributionItem } from "./dashboard";
-import { PieMetricCard } from "@/components/charts/PieMetricCard";
+import DashboardPieMetricCard from "@/components/charts/DashboardPieMetricCard";
 
 const sentimentLabels: Record<
     SentimentDistributionItem["sentiment"],
@@ -20,7 +20,7 @@ export default function SentimentPie({
     );
 
     return (
-        <PieMetricCard
+        <DashboardPieMetricCard
             title="Индекс тональности за выбранный период"
             ariaLabel="Круговая диаграмма позитивной, нейтральной и негативной тональности"
             slices={(["positive", "neutral", "negative"] as const).map(
