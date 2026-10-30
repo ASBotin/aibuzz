@@ -6,7 +6,7 @@ A full-stack GEO analytics app for tracking how brands appear in AI-generated an
 
 ## Live Demo
 
-aibuzz-rho.vercel.app
+https://aibuzz-rho.vercel.app
 
 | Report overview                          | Project dashboard                             |
 | ---------------------------------------- | --------------------------------------------- |
