@@ -1,15 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { normalizeBrandName } from "@/utils/normName";
-
-const TEST_USER_ID =
-    process.env.NEXT_PUBLIC_TEST_USER_ID ||
-    "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type Period = "all_time" | "range" | "since_settings_change";
 
@@ -103,6 +94,7 @@ export async function GET(
 ) {
     try {
         const { id: projectId } = await params;
+        const supabase = await createSupabaseServerClient();
         const searchParams = new URL(request.url).searchParams;
         const rawPeriod = searchParams.get("period") ?? "all_time";
 
@@ -122,7 +114,6 @@ export async function GET(
             .from("projects")
             .select("id, name, updated_at, keywords")
             .eq("id", projectId)
-            .eq("user_id", TEST_USER_ID)
             .maybeSingle();
 
         if (projectError) {

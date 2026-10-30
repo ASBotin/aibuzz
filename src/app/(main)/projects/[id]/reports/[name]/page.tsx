@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import CompetitorAnalysis from "@/components/reports/CompetitorAnalysis";
 import KeywordMentionsChart from "@/components/reports/KeywordMentionsChart";
 import PromptResults from "@/components/reports/PromptResults";
@@ -26,15 +26,7 @@ import {
 } from "@/features/reports/utils";
 import DeleteReportButton from "./DeleteReportButton";
 import ExportPdfButton from "./ExportPdfButton";
-
-const TEST_USER_ID =
-    process.env.NEXT_PUBLIC_TEST_USER_ID ||
-    "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { isAdmin } from "@/lib/auth";
 
 interface PageProps {
     params: Promise<{ id: string; name: string }>;
@@ -44,15 +36,16 @@ export const revalidate = 0;
 
 export default async function ReportPage({ params }: PageProps) {
     const { id: projectId, name: reportId } = await params;
+    const supabase = await createSupabaseServerClient();
 
     const { data: project, error: projectError } = await supabase
         .from("projects")
-        .select("id, name, niche, domain, competitors")
+        .select("id, name, niche, domain, competitors, is_demo")
         .eq("id", projectId)
-        .eq("user_id", TEST_USER_ID)
         .single();
 
     if (projectError || !project) notFound();
+    const actionsDisabled = project.is_demo && !(await isAdmin());
 
     const { data: report, error: reportError } = await supabase
         .from("reports")
@@ -267,6 +260,7 @@ export default async function ReportPage({ params }: PageProps) {
                         <DeleteReportButton
                             projectId={projectId}
                             reportId={reportId}
+                            disabled={actionsDisabled}
                         />
                     </div>
                 </div>

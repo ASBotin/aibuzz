@@ -1,18 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import Report from "@/assets/report.svg?react";
 import ArrowRight from "@/assets/arrow_right.svg?react";
 import DeleteReportButton from "./[name]/DeleteReportButton";
-
-const TEST_USER_ID =
-    process.env.NEXT_PUBLIC_TEST_USER_ID ||
-    "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { isAdmin } from "@/lib/auth";
+import AccentButton from "@/components/ui/AccentButton";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -28,18 +21,18 @@ type ReportItem = {
 
 export default async function ReportsPage({ params }: PageProps) {
     const { id: projectId } = await params;
+    const supabase = await createSupabaseServerClient();
 
-    // Проверяем принадлежность проекта пользователю
     const { data: project } = await supabase
         .from("projects")
-        .select("id, name")
+        .select("id, name, is_demo")
         .eq("id", projectId)
-        .eq("user_id", TEST_USER_ID)
         .single();
 
     if (!project) {
         notFound();
     }
+    const actionsDisabled = project.is_demo && !(await isAdmin());
 
     // Загружаем список отчетов
     const { data: rawReports } = await supabase
@@ -93,12 +86,13 @@ export default async function ReportsPage({ params }: PageProps) {
                             <p className="text-content-secondary mb-4">
                                 Для этого проекта еще не проводились исследования
                             </p>
-                            <Link
+                            <AccentButton
                                 href={`/projects/${projectId}/run-audit`}
-                                className="text-sm font-medium text-accent-2 hover:text-accent-2-hover"
+                                disabled={actionsDisabled}
+                                size="md"
                             >
-                                Запустить первое исследование →
-                            </Link>
+                                Запустить первое исследование
+                            </AccentButton>
                         </div>
                     ) : (
                         <div className="space-y-3">
@@ -137,6 +131,7 @@ export default async function ReportsPage({ params }: PageProps) {
                                                     projectId={projectId}
                                                     reportId={report.id}
                                                     variant="list"
+                                                    disabled={actionsDisabled}
                                                 />
                                             )}
                                         </div>

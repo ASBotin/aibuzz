@@ -8,10 +8,12 @@ export default function DeleteReportButton({
     projectId,
     reportId,
     variant = "header",
+    disabled = false,
 }: {
     projectId: string;
     reportId: string;
     variant?: "header" | "list";
+    disabled?: boolean;
 }) {
     const router = useRouter();
     const [isDeleting, setIsDeleting] = useState(false);
@@ -70,8 +72,8 @@ export default function DeleteReportButton({
             <button
                 type="button"
                 onClick={() => void deleteReport()}
-                disabled={isDeleting}
-                className={`no-print inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-wait disabled:opacity-60 ${
+                disabled={isDeleting || disabled}
+                className={`no-print inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
                     isListVariant
                         ? "border border-red-500/30 bg-red-500/10 text-red-700 hover:bg-red-500/20 focus-visible:ring-red-500/50"
                         : "border border-white/40 text-white hover:bg-white/15 focus-visible:ring-white/80"

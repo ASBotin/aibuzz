@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { MAX_KEYWORDS, MAX_PAGES, MAX_PROMPTS } from '@/features/projects';
+import { getAdminUser } from '@/lib/auth';
 
 type ProjectDataInput = {
   brandName: string;
@@ -27,6 +28,9 @@ const supabase = createClient(
 );
 
 export async function POST(request: Request) {
+  const admin = await getAdminUser();
+  if (admin.response) return admin.response;
+
   try {
     const { projectData, prompts } = (await request.json()) as {
       projectData?: ProjectDataInput;
@@ -83,7 +87,9 @@ export async function POST(request: Request) {
     const { data: project, error: projectErr } = await supabase
       .from('projects')
       .insert({
-        user_id: '1a58f792-2ceb-4e71-9db3-d1d732fe257c',
+        // Регистрация пользователей отключена: владелец — вошедший администратор.
+        is_demo: false,
+        user_id: admin.userId,
         name: projectData.brandName,
         domain: projectData.domain?.trim() || null,
         niche: projectData.niche,

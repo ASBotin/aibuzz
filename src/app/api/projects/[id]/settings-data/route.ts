@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(
     request: Request,
@@ -12,6 +7,7 @@ export async function GET(
 ) {
     try {
         const { id: projectId } = await params;
+        const supabase = await createSupabaseServerClient();
 
         const { data: project, error: projErr } = await supabase
             .from("projects")
@@ -29,7 +25,9 @@ export async function GET(
         if (promptErr) throw new Error("Ошибка загрузки промптов");
 
         return NextResponse.json({ project, prompts });
-    } catch (err: any) {
-        return NextResponse.json({ error: err.message }, { status: 500 });
+    } catch (err: unknown) {
+        const message =
+            err instanceof Error ? err.message : "Неизвестная ошибка";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

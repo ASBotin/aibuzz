@@ -1,17 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import ArrowRight from "@/assets/arrow_right.svg?react";
 import Dashboard from "@/components/dashboard/dashboard";
 import GradientButton from "@/components/ui/GradientButton";
 import DeleteProjectButton from "./DeleteProjectButton";
-
-const TEST_USER_ID = "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { isAdmin } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -22,16 +16,18 @@ export const revalidate = 0;
 export default async function ProjectDashboardPage({ params }: PageProps) {
     const { id } = await params;
 
+    const supabase = await createSupabaseServerClient();
     const { data: project, error } = await supabase
         .from("projects")
         .select("*")
         .eq("id", id)
-        .eq("user_id", TEST_USER_ID)
         .single();
 
     if (error || !project) {
         notFound();
     }
+    const admin = await isAdmin();
+    const actionsDisabled = project.is_demo && !admin;
 
     return (
         <div className="w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -42,7 +38,10 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                 >
                     ← Все проекты
                 </Link>
-                <DeleteProjectButton projectId={id} />
+                <DeleteProjectButton
+                    projectId={id}
+                    disabled={actionsDisabled}
+                />
             </div>
 
             <div className="mb-6 flex flex-col items-start justify-between gap-6 rounded-3xl bg-surface-1 p-6 sm:p-8 lg:flex-row lg:items-center">
@@ -67,6 +66,7 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                 <GradientButton
                     size="md"
                     href={`/projects/${project.id}/run-audit`}
+                    disabled={actionsDisabled}
                     className="shrink-0 py-4 whitespace-nowrap"
                 >
                     Начать исследование
@@ -89,6 +89,21 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                     <ArrowRight className="w-5 h-5 text-content-light group-hover:text-accent-2 transition-transform group-hover:translate-x-1 shrink-0" />
                 </Link>
 
+                {actionsDisabled ? (
+                    <div
+                        aria-disabled="true"
+                        className="flex cursor-not-allowed items-center justify-between rounded-3xl bg-surface-1 p-6 opacity-60 sm:p-7"
+                    >
+                        <div>
+                            <h2 className="text-lg font-semibold text-content-primary">
+                                Настройки
+                            </h2>
+                            <p className="mt-1 text-sm text-content-secondary">
+                                Доступны только администратору
+                            </p>
+                        </div>
+                    </div>
+                ) : (
                 <Link
                     href={`/projects/${project.id}/settings`}
                     className="group flex items-center justify-between rounded-3xl bg-surface-1 p-6 transition-all hover:bg-surface-3 sm:p-7"
@@ -103,6 +118,7 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                     </div>
                     <ArrowRight className="w-5 h-5 text-content-light group-hover:text-accent-2 transition-transform group-hover:translate-x-1 shrink-0" />
                 </Link>
+                )}
             </div>
             <Dashboard projectId={project.id} className="mt-6" />
         </div>

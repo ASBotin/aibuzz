@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-
-const TEST_USER_ID =
-    process.env.NEXT_PUBLIC_TEST_USER_ID ||
-    "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
+import { getAdminUser } from "@/lib/auth";
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,13 +14,15 @@ export async function DELETE(
     _request: Request,
     { params }: { params: Promise<{ id: string }> },
 ) {
+    const admin = await getAdminUser();
+    if (admin.response) return admin.response;
+
     try {
         const { id: projectId } = await params;
         const { data: project, error: projectError } = await supabase
             .from("projects")
-            .select("id")
+            .select("id, user_id, is_demo")
             .eq("id", projectId)
-            .eq("user_id", TEST_USER_ID)
             .maybeSingle();
 
         if (projectError) {
@@ -31,7 +30,10 @@ export async function DELETE(
                 `Не удалось проверить проект: ${projectError.message}`,
             );
         }
-        if (!project) {
+        if (
+            !project ||
+            (project.user_id !== admin.userId && project.is_demo !== true)
+        ) {
             return NextResponse.json(
                 { error: "Проект не найден." },
                 { status: 404 },
@@ -105,7 +107,7 @@ export async function DELETE(
             .from("projects")
             .delete()
             .eq("id", projectId)
-            .eq("user_id", TEST_USER_ID)
+            .or(`user_id.eq.${admin.userId},is_demo.eq.true`)
             .select("id")
             .maybeSingle();
 

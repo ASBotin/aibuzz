@@ -1,15 +1,9 @@
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 
 import ArrowRight from "@/assets/arrow_right.svg?react";
 import GradientButton from "@/components/ui/GradientButton";
-
-const TEST_USER_ID = "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { isAdmin } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ProjectWithReports = {
     id: string;
@@ -22,6 +16,8 @@ type ProjectWithReports = {
 export const revalidate = 0;
 
 export default async function ProjectsPage() {
+    const admin = await isAdmin();
+    const supabase = await createSupabaseServerClient();
     const { data: rawProjects, error } = await supabase
         .from("projects")
         .select(
@@ -35,7 +31,6 @@ export default async function ProjectsPage() {
       )
     `,
         )
-        .eq("user_id", TEST_USER_ID)
         .order("created_at", { ascending: false });
 
     if (error) {
@@ -121,6 +116,7 @@ export default async function ProjectsPage() {
                         <GradientButton
                             size="lg"
                             href="/projects/new"
+                            disabled={!admin}
                             className="px-8"
                         >
                             <svg

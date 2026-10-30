@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { MAX_KEYWORDS, MAX_PAGES, MAX_PROMPTS } from "@/features/projects";
+import { getAdminUser } from "@/lib/auth";
 
 type PromptInput = {
     text: string;
@@ -33,8 +34,32 @@ export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> },
 ) {
+    const admin = await getAdminUser();
+    if (admin.response) return admin.response;
+
     try {
         const { id: projectId } = await params;
+        const { data: project, error: projectError } = await supabase
+            .from("projects")
+            .select("id, user_id, is_demo")
+            .eq("id", projectId)
+            .maybeSingle();
+
+        if (projectError) {
+            throw new Error(
+                `Не удалось проверить проект: ${projectError.message}`,
+            );
+        }
+        if (
+            !project ||
+            (project.user_id !== admin.userId && project.is_demo !== true)
+        ) {
+            return NextResponse.json(
+                { error: "Проект не найден." },
+                { status: 404 },
+            );
+        }
+
         const body = (await request.json()) as SettingsInput;
         const { projectData, competitors, keywords, pages, prompts } = body;
 

@@ -1,14 +1,7 @@
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
-
-const TEST_USER_ID =
-    process.env.NEXT_PUBLIC_TEST_USER_ID ||
-    "1a58f792-2ceb-4e71-9db3-d1d732fe257c";
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { isAdmin } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import SignOutButton from "./SignOutButton";
 
 type Project = {
     id: string;
@@ -16,10 +9,11 @@ type Project = {
 };
 
 export default async function Sidebar() {
+    const admin = await isAdmin();
+    const supabase = await createSupabaseServerClient();
     const { data: projects, error } = await supabase
         .from("projects")
         .select("id, name")
-        .eq("user_id", TEST_USER_ID)
         .order("created_at", { ascending: false });
 
     if (error) {
@@ -37,6 +31,16 @@ export default async function Sidebar() {
                 >
                     <span className="app-sidebar-label">Проекты</span>
                 </Link>
+                {admin ? (
+                    <SignOutButton />
+                ) : (
+                    <Link
+                        href="/login"
+                        className="flex items-center rounded-xl px-3 py-2 text-xs text-content-secondary transition-colors hover:bg-surface-1 hover:text-content-primary"
+                    >
+                        Вход администратора
+                    </Link>
+                )}
 
                 <ul className="mt-2 space-y-1">
                     {(projects as Project[]).map((project) => (

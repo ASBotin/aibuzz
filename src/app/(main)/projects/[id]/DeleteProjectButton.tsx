@@ -6,8 +6,10 @@ import StatusNotice from "@/components/ui/StatusNotice";
 
 export default function DeleteProjectButton({
     projectId,
+    disabled = false,
 }: {
     projectId: string;
+    disabled?: boolean;
 }) {
     const router = useRouter();
     const [isDeleting, setIsDeleting] = useState(false);
@@ -65,8 +67,8 @@ export default function DeleteProjectButton({
             <button
                 type="button"
                 onClick={() => void deleteProject()}
-                disabled={isDeleting}
-                className="text-sm font-normal text-red-600/70 transition-colors hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                disabled={isDeleting || disabled}
+                className="cursor-pointer text-sm font-normal text-red-600/70 transition-colors hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
                 {isDeleting ? "Удаление..." : "Удалить проект"}
             </button>

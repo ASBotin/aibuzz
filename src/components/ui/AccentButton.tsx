@@ -13,6 +13,7 @@ type SharedProps = {
 
 type LinkProps = SharedProps & {
     href: string;
+    disabled?: boolean;
 };
 
 type NativeButtonProps = SharedProps &
@@ -39,6 +40,20 @@ export default function AccentButton(props: AccentButtonProps) {
     const classes = cn(baseClasses, sizeClasses[size], className);
 
     if (href !== undefined) {
+        if (props.disabled) {
+            return (
+                <span
+                    aria-disabled="true"
+                    className={cn(
+                        classes,
+                        "cursor-not-allowed opacity-60 hover:bg-accent-2",
+                    )}
+                >
+                    {children}
+                </span>
+            );
+        }
+
         return (
             <Link href={href} className={classes}>
                 {children}
