@@ -23,7 +23,10 @@ export default async function Sidebar() {
     }
 
     return (
-        <aside className="app-sidebar sticky top-0 h-screen shrink-0 overflow-y-auto border-r border-surface-3 bg-surface-2 px-3 py-6 sm:px-4">
+        <aside
+            id="main-sidebar"
+            className="app-sidebar sticky top-0 h-screen shrink-0 overflow-y-auto border-r border-surface-3 bg-surface-2 px-3 py-6 sm:px-4"
+        >
             <nav aria-label="Основная навигация">
                 <Link
                     href="/projects"

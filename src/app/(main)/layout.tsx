@@ -1,5 +1,6 @@
 import "../globals.css";
 import Sidebar from "@/components/layout/Sidebar";
+import ResponsiveSidebar from "@/components/layout/ResponsiveSidebar";
 
 export default function RootLayout({
     children,
@@ -10,7 +11,9 @@ export default function RootLayout({
         <html lang="ru">
             <body className="bg-main text-content-primary min-h-screen antialiased">
                 <div className="flex min-h-screen">
-                    <Sidebar />
+                    <ResponsiveSidebar>
+                        <Sidebar />
+                    </ResponsiveSidebar>
                     <main className="app-shell-content min-w-0 flex-1">
                         {children}
                     </main>

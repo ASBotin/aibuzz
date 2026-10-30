@@ -27,13 +27,75 @@
   width: var(--sidebar-width);
 }
 
+.app-sidebar-responsive {
+  display: contents;
+}
+
+.app-sidebar-container {
+  display: contents;
+}
+
+.app-sidebar-toggle,
+.app-sidebar-backdrop {
+  display: none;
+}
+
 @media (max-width: 639px) {
   :root {
-    --sidebar-width: 4rem;
+    --sidebar-width: 15rem;
   }
 
-  .app-sidebar-label {
-    display: none;
+  .app-sidebar-responsive {
+    display: block;
+  }
+
+  .app-sidebar-container {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 40;
+    width: min(var(--sidebar-width), 85vw);
+    transform: translateX(-100%);
+    transition: transform 200ms ease;
+  }
+
+  .app-sidebar-container.is-open {
+    transform: translateX(0);
+  }
+
+  .app-sidebar {
+    width: 100%;
+  }
+
+  .app-sidebar-toggle {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 50;
+    display: flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-surface-3);
+    border-radius: 0.75rem;
+    background: var(--color-surface-2);
+    color: var(--color-content-primary);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgb(18 18 20 / 12%);
+  }
+
+  .app-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: block;
+    border: 0;
+    background: rgb(18 18 20 / 35%);
+    cursor: pointer;
+  }
+
+  .app-shell-content {
+    padding-top: 3.5rem;
   }
 }
 
