@@ -11,6 +11,7 @@ import {
 } from "@/features/projects";
 
 type ProjectDetailsFormProps = {
+    readOnly?: boolean;
     value: ProjectFormData;
     competitors: string[];
     keywords: string[];
@@ -166,6 +167,7 @@ function TagInput({
 }
 
 export default function ProjectDetailsForm({
+    readOnly = false,
     value,
     competitors,
     keywords,
@@ -193,7 +195,10 @@ export default function ProjectDetailsForm({
     };
 
     return (
-        <div className="space-y-6">
+        <fieldset
+            disabled={readOnly}
+            className="min-w-0 space-y-6 border-0 p-0 m-0"
+        >
             <div className="max-w-full space-y-2">
                 <FieldLabel
                     htmlFor="brandName-input"
@@ -395,6 +400,6 @@ export default function ProjectDetailsForm({
                     ))}
                 </div>
             </div>
-        </div>
+        </fieldset>
     );
 }

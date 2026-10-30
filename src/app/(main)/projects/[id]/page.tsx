@@ -89,21 +89,6 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                     <ArrowRight className="w-5 h-5 text-content-light group-hover:text-accent-2 transition-transform group-hover:translate-x-1 shrink-0" />
                 </Link>
 
-                {actionsDisabled ? (
-                    <div
-                        aria-disabled="true"
-                        className="flex cursor-not-allowed items-center justify-between rounded-3xl bg-surface-1 p-6 opacity-60 sm:p-7"
-                    >
-                        <div>
-                            <h2 className="text-lg font-semibold text-content-primary">
-                                Настройки
-                            </h2>
-                            <p className="mt-1 text-sm text-content-secondary">
-                                Доступны только администратору
-                            </p>
-                        </div>
-                    </div>
-                ) : (
                 <Link
                     href={`/projects/${project.id}/settings`}
                     className="group flex items-center justify-between rounded-3xl bg-surface-1 p-6 transition-all hover:bg-surface-3 sm:p-7"
@@ -113,12 +98,13 @@ export default async function ProjectDashboardPage({ params }: PageProps) {
                             Настройки
                         </h2>
                         <p className="text-content-secondary text-sm mt-1">
-                            Управление промптами, конкурентами и параметрами
+                            {actionsDisabled
+                                ? "Просмотр промптов, конкурентов и параметров"
+                                : "Управление промптами, конкурентами и параметрами"}
                         </p>
                     </div>
                     <ArrowRight className="w-5 h-5 text-content-light group-hover:text-accent-2 transition-transform group-hover:translate-x-1 shrink-0" />
                 </Link>
-                )}
             </div>
             <Dashboard projectId={project.id} className="mt-6" />
         </div>

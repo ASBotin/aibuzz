@@ -31,16 +31,6 @@ export default async function Sidebar() {
                 >
                     <span className="app-sidebar-label">Проекты</span>
                 </Link>
-                {admin ? (
-                    <SignOutButton />
-                ) : (
-                    <Link
-                        href="/login"
-                        className="flex items-center rounded-xl px-3 py-2 text-xs text-content-secondary transition-colors hover:bg-surface-1 hover:text-content-primary"
-                    >
-                        Вход администратора
-                    </Link>
-                )}
 
                 <ul className="mt-2 space-y-1">
                     {(projects as Project[]).map((project) => (
@@ -63,6 +53,17 @@ export default async function Sidebar() {
                         </li>
                     ))}
                 </ul>
+
+                {admin ? (
+                    <SignOutButton />
+                ) : (
+                    <Link
+                        href="/login"
+                        className="flex items-center rounded-xl px-3 py-2 text-xs text-content-secondary transition-colors hover:bg-surface-1 hover:text-content-primary"
+                    >
+                        Вход администратора
+                    </Link>
+                )}
             </nav>
         </aside>
     );

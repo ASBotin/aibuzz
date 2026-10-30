@@ -14,9 +14,14 @@ import {
 type PromptEditorProps = {
     prompts: ProjectPrompt[];
     onChange: Dispatch<SetStateAction<ProjectPrompt[]>>;
+    readOnly?: boolean;
 };
 
-export default function PromptEditor({ prompts, onChange }: PromptEditorProps) {
+export default function PromptEditor({
+    prompts,
+    onChange,
+    readOnly = false,
+}: PromptEditorProps) {
     const [expanded, setExpanded] = useState<Record<PromptCategory, boolean>>({
         main: false,
         brand_direct: false,
@@ -202,6 +207,7 @@ export default function PromptEditor({ prompts, onChange }: PromptEditorProps) {
                                                                 );
                                                             }
                                                         }}
+                                                        hidden={readOnly}
                                                         aria-label="Редактировать промпт"
                                                         className="flex-1 min-w-0 bg-surface-2 border border-surface-3 rounded-xl px-3 py-1.5 text-sm text-content-primary outline-none focus:border-accent-2"
                                                     />
@@ -270,6 +276,7 @@ export default function PromptEditor({ prompts, onChange }: PromptEditorProps) {
                                                                 ? "Удалить пользовательский промпт"
                                                                 : "Удалить сгенерированный промпт"
                                                         }
+                                                        hidden={readOnly}
                                                         title={
                                                             prompt.isCustom
                                                                 ? "Удалить пользовательский промпт"
@@ -309,7 +316,7 @@ export default function PromptEditor({ prompts, onChange }: PromptEditorProps) {
                 })}
             </div>
 
-            <div className="bg-surface-1 border border-surface-3 rounded-2xl p-5 sm:p-6 mb-8 space-y-4">
+            {!readOnly && <div className="bg-surface-1 border border-surface-3 rounded-2xl p-5 sm:p-6 mb-8 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <h2 className="text-sm font-medium text-content-primary">
@@ -361,9 +368,9 @@ export default function PromptEditor({ prompts, onChange }: PromptEditorProps) {
                         Добавить
                     </button>
                 </div>
-            </div>
+            </div>}
 
-            {showWarning && (
+            {!readOnly && showWarning && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-content-primary/20 backdrop-blur-xs p-4">
                     <div className="bg-surface-2 border border-surface-3 rounded-2xl p-6 max-w-md w-full shadow-lg space-y-4">
                         <h3 className="text-base font-bold text-content-primary">

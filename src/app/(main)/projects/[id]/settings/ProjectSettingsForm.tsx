@@ -41,7 +41,11 @@ type ProjectSettingsResponse = {
     }[];
 };
 
-export default function ProjectSettingsForm() {
+export default function ProjectSettingsForm({
+    editable,
+}: {
+    editable: boolean;
+}) {
     const params = useParams();
     const projectId = params.id as string;
 
@@ -219,13 +223,19 @@ export default function ProjectSettingsForm() {
                 <h1 className="text-3xl font-bold text-content-primary">
                     Настройки проекта
                 </h1>
-                <AccentButton
-                    size="md"
-                    onClick={handleSaveAll}
-                    disabled={saving}
-                >
-                    {saving ? "Сохранение..." : "Сохранить изменения"}
-                </AccentButton>
+                {editable ? (
+                    <AccentButton
+                        size="md"
+                        onClick={handleSaveAll}
+                        disabled={saving}
+                    >
+                        {saving ? "Сохранение..." : "Сохранить изменения"}
+                    </AccentButton>
+                ) : (
+                    <p className="text-sm text-content-secondary">
+                        Доступен только просмотр настроек
+                    </p>
+                )}
             </div>
 
             {error && (
@@ -277,6 +287,7 @@ export default function ProjectSettingsForm() {
 
             <div hidden={activeTab !== "general"}>
                 <ProjectDetailsForm
+                    readOnly={!editable}
                     value={formData}
                     competitors={competitors}
                     keywords={keywords}
@@ -289,19 +300,25 @@ export default function ProjectSettingsForm() {
             </div>
 
             <div hidden={activeTab !== "prompts"}>
-                <PromptEditor prompts={prompts} onChange={setPrompts} />
-                <div className="mt-6 flex flex-col items-start gap-3 border-t border-surface-3 pt-6">
-                    <p className="text-sm text-content-secondary">
-                        Сгенерируйте новый набор и замените им текущие промпты
-                        после проверки.
-                    </p>
-                    <AccentButton
-                        href={`/projects/new/createprompts?projectId=${projectId}`}
-                        size="md"
-                    >
-                        Сгенерировать промпты заново
-                    </AccentButton>
-                </div>
+                <PromptEditor
+                    prompts={prompts}
+                    onChange={setPrompts}
+                    readOnly={!editable}
+                />
+                {editable && (
+                    <div className="mt-6 flex flex-col items-start gap-3 border-t border-surface-3 pt-6">
+                        <p className="text-sm text-content-secondary">
+                            Сгенерируйте новый набор и замените им текущие промпты
+                            после проверки.
+                        </p>
+                        <AccentButton
+                            href={`/projects/new/createprompts?projectId=${projectId}`}
+                            size="md"
+                        >
+                            Сгенерировать промпты заново
+                        </AccentButton>
+                    </div>
+                )}
             </div>
         </div>
     );
