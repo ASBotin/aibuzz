@@ -34,10 +34,10 @@ export default async function ProjectsPage() {
         .order("created_at", { ascending: false });
 
     if (error) {
-        console.error("[Projects Fetch Error]:", error);
+        throw new Error(`Не удалось загрузить проекты: ${error.message}`);
     }
 
-    const projects = (rawProjects as unknown as ProjectWithReports[]) || [];
+    const projects = rawProjects as unknown as ProjectWithReports[];
 
     return (
         <div className="w-full px-4 py-8 sm:px-6 sm:py-10 lg:px-8">

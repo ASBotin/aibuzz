@@ -16,21 +16,29 @@ export default function SignInForm() {
         setLoading(true);
         setError(null);
 
-        const formData = new FormData(event.currentTarget);
-        const supabase = createSupabaseBrowserClient();
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: String(formData.get("email") ?? "").trim(),
-            password: String(formData.get("password") ?? ""),
-        });
+        try {
+            const formData = new FormData(event.currentTarget);
+            const supabase = createSupabaseBrowserClient();
+            const { error: signInError } =
+                await supabase.auth.signInWithPassword({
+                    email: String(formData.get("email") ?? "").trim(),
+                    password: String(formData.get("password") ?? ""),
+                });
 
-        if (signInError) {
-            setError("Не удалось войти. Проверьте email и пароль.");
+            if (signInError) {
+                setError("Не удалось войти. Проверьте email и пароль.");
+                return;
+            }
+
+            router.replace("/projects");
+            router.refresh();
+        } catch {
+            setError(
+                "Не удалось выполнить вход. Проверьте соединение и попробуйте снова.",
+            );
+        } finally {
             setLoading(false);
-            return;
         }
-
-        router.replace("/projects");
-        router.refresh();
     }
 
     return (
